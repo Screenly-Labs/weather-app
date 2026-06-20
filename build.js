@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+/* global Bun */
 // Minifies the static JS and CSS assets in place, replacing the gulp build.
 // The assets are served directly from ./assets by wrangler's [site] config and
 // referenced at /static/..., so the minified output must overwrite the source.
