@@ -12,26 +12,28 @@ When running on a Screenly device with [asset metadata enabled](https://github.c
 
 ## Requirements
 
-Install [Wrangler](https://developers.cloudflare.com/workers/wrangler/)
+This project uses [Bun](https://bun.sh/) as its package manager. Install dependencies with:
 
 ```bash
-$ npm install -g wrangler
+$ bun install
 ```
+
+This installs [Wrangler](https://developers.cloudflare.com/workers/wrangler/) locally. Run it via `bunx wrangler` (or install it globally with `bun add -g wrangler`).
 
 Login to Cloudflare
 
 ```bash
-$ wrangler login
+$ bunx wrangler login
 ```
 
 Run the project in dev mode
 
 ```bash
-$ wrangler dev
+$ bun run dev
 ```
 
 Publish worker
 
 ```bash
-$ wrangler publish --env [environment name]
+$ bunx wrangler publish --env [environment name]
 ```

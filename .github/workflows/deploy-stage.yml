@@ -12,8 +12,9 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v2
-      - run: yarn install
-      - run: yarn build
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
       - name: Publish
         uses: cloudflare/wrangler-action@2.0.0
         with:
