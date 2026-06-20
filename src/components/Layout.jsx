@@ -7,7 +7,14 @@ const Layout = (props) => html`<!DOCTYPE html>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link
         rel="preload"
-        href="/static/fonts/inter-latin-400-normal.woff2"
+        href="/static/fonts/fraunces-latin-standard-normal.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+      <link
+        rel="preload"
+        href="/static/fonts/hanken-grotesk-latin-wght-normal.woff2"
         as="font"
         type="font/woff2"
         crossorigin

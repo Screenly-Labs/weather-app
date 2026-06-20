@@ -10,7 +10,7 @@ const App = (props) => {
   const gaId = gaIds[env]
   return (
     <Layout sentryId={sentryId} gaId={gaId}>
-      <div class='content'>
+      <div class='content playing'>
         <Header />
         <Footer />
       </div>

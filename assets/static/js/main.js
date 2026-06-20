@@ -2,6 +2,7 @@
   let clockTimer
   let weatherTimer
   let refreshTimer
+  let ctaTimer
   let tz
   let currentWeatherId
   let tempScale = 'C'
@@ -219,7 +220,46 @@
     updateAttribute('current-weather-icon', 'src', `${iconsPath}/${icon}.svg`)
     updateContent('current-weather-status', desc)
     updateContent('current-temp', getTemp(temp))
-    updateContent('current-temp-scale', `°${tempScale}`)
+    // The degree sign is a static element; the scale element holds just C/F.
+    updateContent('current-temp-scale', tempScale)
+  }
+
+  // Simplified condition category used to drive the weather-reactive accent.
+  const getCondCategory = (id) => {
+    if (id >= 200 && id <= 299) return 'thunderstorm'
+    if (id >= 300 && id <= 399) return 'drizzle'
+    if (id >= 500 && id <= 599) return 'rain'
+    if (id >= 600 && id <= 699) return 'snow'
+    if (id >= 700 && id <= 799) return 'haze'
+    if (id === 800) return 'clear'
+    return 'clouds'
+  }
+
+  const setAccent = (id, dt) => {
+    document.body.dataset.cond = getCondCategory(id)
+    document.body.dataset.night = checkIfNight(dt) ? 'true' : 'false'
+  }
+
+  const updateDetail = (feelsLike, humidity, windSpeed) => {
+    const parts = []
+    if (typeof feelsLike === 'number') {
+      parts.push(`Feels like ${getTemp(feelsLike)}°`)
+    }
+    if (typeof humidity === 'number') {
+      parts.push(`Humidity ${humidity}%`)
+    }
+    if (typeof windSpeed === 'number') {
+      // OpenWeather metric wind is m/s; show mph for °F countries, else km/h.
+      const wind = tempScale === 'F'
+        ? `${Math.round(windSpeed * 2.23694)} mph`
+        : `${Math.round(windSpeed * 3.6)} km/h`
+      parts.push(`Wind ${wind}`)
+    }
+
+    const detail = document.querySelector('#detail')
+    if (detail) {
+      detail.innerHTML = parts.map((part) => `<span>${part}</span>`).join('')
+    }
   }
 
   const findCurrentWeatherItem = (list) => {
@@ -246,7 +286,8 @@
     clearTimeout(weatherTimer)
     const currentIndex = findCurrentWeatherItem(list)
 
-    const { dt, weather, main: { temp } } = list[currentIndex]
+    const currentItem = list[currentIndex]
+    const { dt, weather, main: { temp, feels_like: feelsLike, humidity } } = currentItem
 
     if (Array.isArray(weather) && weather.length > 0) {
       const { id, description } = weather[0]
@@ -256,6 +297,8 @@
       }
 
       updateCurrentWeather(icon, description, temp)
+      updateDetail(feelsLike, humidity, currentItem.wind && currentItem.wind.speed)
+      setAccent(id, dt)
       currentWeatherId = id
     }
 
@@ -317,6 +360,43 @@
     }
   }
 
+  /**
+   * Rotating Screenly call-to-action.
+   *
+   * The banner is only shown on non-Screenly devices (a browser tab or a rival
+   * signage system), so the copy pitches the viewer to switch to Screenly. It
+   * is non-interactive — a digital sign has no cursor/touch — and surfaces
+   * screenly.io as the destination a viewer types in themselves.
+   */
+  const ctaMessages = [
+    'Power your screens with Screenly',
+    'Running in a browser? Put it on Screenly',
+    'Switch to secure, managed digital signage',
+    'Secure by default. Managed remotely.',
+    'Join 10,000+ screens powered by Screenly'
+  ]
+  let ctaIndex = 0
+
+  const rotateCta = () => {
+    const msg = document.querySelector('#cta-msg')
+    if (!msg) return
+
+    ctaIndex = (ctaIndex + 1) % ctaMessages.length
+    const next = ctaMessages[ctaIndex]
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (reduceMotion) {
+      msg.innerText = next
+      return
+    }
+
+    msg.classList.add('is-out')
+    setTimeout(() => {
+      msg.innerText = next
+      msg.classList.remove('is-out')
+    }, 450)
+  }
+
   const setBanner = () => {
     const banner = document.querySelector('.upgrade-banner')
     const { userAgent } = navigator
@@ -324,6 +404,8 @@
 
     if (!isScreenlyDevice) {
       banner.classList.add('visible')
+      clearInterval(ctaTimer)
+      ctaTimer = setInterval(rotateCta, 5000)
     }
 
     generateAnalyticsEvent('device', {
