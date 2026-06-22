@@ -11,6 +11,7 @@ const App = (props) => {
   return (
     <Layout sentryId={sentryId} gaId={gaId}>
       <div class='content playing'>
+        <div class='weather-fx' aria-hidden='true'></div>
         <Header />
         <Footer />
       </div>
