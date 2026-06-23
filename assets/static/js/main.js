@@ -360,7 +360,7 @@
 
   const updateData = (data) => {
     // The API returns { error: true } on upstream failures; skip those.
-    if (!data || !data.city) return
+    if (!data?.city) return
     const { city: { name, country, timezone }, list } = data
     tempScale = usesFahrenheit(country) ? 'F' : 'C'
     setLocale(country)
