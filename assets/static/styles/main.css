@@ -265,15 +265,26 @@ body[data-night="true"]        { --accent: #b6a6f2; }
 }
 
 .detail {
+  /* Flex so each metric wraps as a whole unit (between metrics), never
+     mid-metric — e.g. "Wind 24 km/h" stays together. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.45em;
+  row-gap: 0.15rem;
   margin-block-start: 0.5rem;
   font-size: 0.92rem;
   letter-spacing: 0.03em;
   color: var(--ink-dim);
 }
 
+.detail span {
+  white-space: nowrap;
+}
+
 .detail span + span::before {
   content: "·";
-  margin: 0 0.55em;
+  margin-inline-end: 0.45em;
   opacity: 0.55;
 }
 
