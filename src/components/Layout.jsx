@@ -1,7 +1,7 @@
 import { html } from 'hono/html'
 
 const Layout = (props) => html`<!DOCTYPE html>
-  <html>
+  <html lang="en">
     <head>
       <title>Screenly Weather App - Weather Forecast</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">

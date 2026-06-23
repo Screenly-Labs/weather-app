@@ -4,7 +4,7 @@ const Footer = () => html`
   <div class="midrow">
     <section class="hero">
       <div class="weather-condition anim" style="--d: 260ms">
-        <img id="current-weather-icon" alt="" />
+        <img id="current-weather-icon" alt="" width="100" height="100" />
         <span id="current-weather-status"></span>
       </div>
       <div class="temperature">
@@ -19,7 +19,7 @@ const Footer = () => html`
       <div class="upgrade-banner">
         <span class="cta-msg" id="cta-msg">Power your screens with Screenly</span>
         <span class="cta-lockup">
-          <img class="cta-logo" src="/static/images/screenly-logo.svg" alt="Screenly" />
+          <img class="cta-logo" src="/static/images/screenly-logo.svg" alt="Screenly" width="178" height="40" />
           <span class="cta-url">screenly.io</span>
         </span>
       </div>
@@ -30,7 +30,7 @@ const Footer = () => html`
 
   <div class="weather-item dummy-node">
     <span class="item-time"></span>
-    <img src="" class="item-icon" alt="" />
+    <img src="" class="item-icon" alt="" width="100" height="100" />
     <span class="item-temp-degree"><span class="item-temp"></span><sup>°</sup></span>
   </div>
   `
