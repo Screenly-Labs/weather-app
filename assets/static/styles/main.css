@@ -348,8 +348,9 @@ body[data-night="true"]        { --accent: #b6a6f2; }
   border-block-start: 1px solid var(--hairline);
 }
 
-.dummy-node {
-  display: none !important;
+/* Higher specificity than .weather-item so the cloned template stays hidden. */
+.weather-item.dummy-node {
+  display: none;
 }
 
 .weather-item {
@@ -669,8 +670,10 @@ body[data-cond="thunderstorm"] .weather-fx {
     transition: none;
   }
 
+  /* Reveal entrance elements immediately (overrides the base .anim opacity:0
+     by source order) and cancel the entrance animation. */
   .anim {
-    opacity: 1 !important;
+    opacity: 1;
   }
 
   .playing .anim {
@@ -681,19 +684,9 @@ body[data-cond="thunderstorm"] .weather-fx {
     transition: none;
   }
 
-  /* Freeze weather FX motion but keep the static atmosphere (glow, stars). */
-  .weather-fx,
-  .weather-fx::before,
-  .weather-fx::after,
-  .fx-p {
-    animation: none !important;
-  }
-
-  /* Frozen precipitation looks wrong — hide it; stars stay (static). */
-  body[data-cond="rain"] .fx-p,
-  body[data-cond="thunderstorm"] .fx-p,
-  body[data-cond="drizzle"] .fx-p,
-  body[data-cond="snow"] .fx-p {
+  /* Drop the decorative weather FX layer entirely (ambient motion + particles)
+     rather than freezing it mid-animation. */
+  .weather-fx {
     display: none;
   }
 }

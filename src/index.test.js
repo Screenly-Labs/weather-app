@@ -6,7 +6,7 @@ import App from './components/App'
 // exist in the Workers runtime; stub both before importing the app.
 mock.module('__STATIC_CONTENT_MANIFEST', () => ({ default: '{}' }))
 mock.module('hono/cloudflare-workers', () => ({
-  serveStatic: () => async (c, next) => next()
+  serveStatic: () => async (_c, next) => next()
 }))
 
 // A Map-backed Cache API stub serving both caches.default (SSR page cache,

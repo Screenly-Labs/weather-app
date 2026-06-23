@@ -6,6 +6,9 @@
   "scripts": {
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "lint": "biome lint --error-on-warnings .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
     "sync-fonts": "bun run sync-fonts.js",
     "dev": "wrangler dev",
     "build": "bun run build.js",
@@ -18,10 +21,8 @@
     "hono": "^4.12.27"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.1",
     "@cloudflare/workers-types": "^4.20260623.1",
     "wrangler": "^4.104.0"
-  },
-  "ts-standard": {
-    "project": "tsconfig.json"
   }
 }

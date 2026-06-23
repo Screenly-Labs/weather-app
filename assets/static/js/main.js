@@ -1,5 +1,5 @@
 /* global module */
-(function () {
+(() => {
   let clockTimer
   let weatherTimer
   let refreshTimer
@@ -58,7 +58,7 @@
       timeFormatter = new Intl.DateTimeFormat(locale, timeOpts)
       dateFormatterLong = new Intl.DateTimeFormat(locale, dateLongOpts)
       dateFormatterShort = new Intl.DateTimeFormat(locale, dateShortOpts)
-    } catch (e) {
+    } catch {
       // Malformed locale string: fall back rather than break the clock.
       locale = FALLBACK_LOCALE
       timeFormatter = new Intl.DateTimeFormat(locale, timeOpts)
@@ -274,7 +274,7 @@
   }
 
   const findCurrentWeatherItem = (list) => {
-    const currentUTC = Math.round(new Date().getTime() / 1000)
+    const currentUTC = Math.round(Date.now() / 1000)
     let itemIndex = 0
 
     while (itemIndex < list.length - 1 && list[itemIndex].dt < currentUTC) {
@@ -308,7 +308,7 @@
       }
 
       updateCurrentWeather(icon, description, temp)
-      updateDetail(feelsLike, humidity, currentItem.wind && currentItem.wind.speed)
+      updateDetail(feelsLike, humidity, currentItem.wind?.speed)
       setAccent(id, dt)
       currentWeatherId = id
     }

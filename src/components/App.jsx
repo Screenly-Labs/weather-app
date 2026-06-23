@@ -1,4 +1,3 @@
-import { jsx } from 'hono/jsx'
 import Layout from './Layout'
 import Header from './Header'
 import Footer from './Footer'

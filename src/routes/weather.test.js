@@ -34,7 +34,7 @@ describe('Weather route', () => {
     }
 
     // An injection attempt that tries to smuggle a second appid param.
-    await call('http://localhost/?lat=37.77&lng=' + encodeURIComponent('-122&appid=evil'))
+    await call(`http://localhost/?lat=37.77&lng=${encodeURIComponent('-122&appid=evil')}`)
 
     const url = new URL(capturedUrl)
 
@@ -57,7 +57,7 @@ describe('Weather route', () => {
   it('returns 504 when the upstream request times out', async () => {
     // Resolve well past the (tiny) configured timeout, but reject as soon as the
     // route's own AbortController fires, so the timeout path runs for real.
-    globalThis.fetch = (url, opts) => new Promise((resolve, reject) => {
+    globalThis.fetch = (_url, opts) => new Promise((resolve, reject) => {
       const timer = setTimeout(() => resolve(json({})), 200)
       opts.signal.addEventListener('abort', () => {
         clearTimeout(timer)
