@@ -1,11 +1,11 @@
-/**
- * @jest-environment node
- */
-/* eslint-env jest */
+import { describe, expect, it } from 'bun:test'
 
 // Unit tests for the client-side locale logic in assets/static/js/main.js.
 // main.js is a browser IIFE that exposes its pure helpers via module.exports
-// when required (and skips its browser-only init when there is no document).
+// (and skips its browser-only init when there is no document), so a default
+// import here resolves to that exports object.
+import main from '../assets/static/js/main.js'
+
 const {
   resolveLocale,
   usesFahrenheit,
@@ -14,7 +14,7 @@ const {
   formatDate,
   getTimeByOffset,
   getCondCategory
-} = require('../assets/static/js/main.js')
+} = main
 
 // Saturday 2026-06-20 13:30:00 UTC, as the unix seconds main.js works with.
 const DT = Math.floor(Date.parse('2026-06-20T13:30:00Z') / 1000)
