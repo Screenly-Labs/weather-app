@@ -1,3 +1,4 @@
+/* global module */
 (function () {
   let clockTimer
   let weatherTimer
@@ -29,6 +30,7 @@
     'BS', 'KY', 'LR', 'PW', 'FM', 'MH'
   ]
   const celsiusToFahrenheit = (temp) => ((1.8 * temp) + 32)
+  const usesFahrenheit = (code) => countriesUsingFahrenheit.includes(code)
 
   const getTemp = (temp) => Math.round(tempScale === 'C' ? temp : celsiusToFahrenheit(temp))
   /**
@@ -65,8 +67,10 @@
     }
   }
 
+  const resolveLocale = (code) => locales[code] || FALLBACK_LOCALE
+
   const setLocale = (code) => {
-    locale = locales[code] || FALLBACK_LOCALE
+    locale = resolveLocale(code)
     buildFormatters()
   }
 
@@ -192,7 +196,8 @@
   const formatTime = (dateObj) => timeFormatter.format(dateObj)
 
   const formatDate = (dateObj) => {
-    const formatter = window.innerWidth >= 480 ? dateFormatterLong : dateFormatterShort
+    const wide = typeof window === 'undefined' || window.innerWidth >= 480
+    const formatter = wide ? dateFormatterLong : dateFormatterShort
     return formatter.format(dateObj)
   }
 
@@ -336,7 +341,7 @@
 
   const updateData = (data) => {
     const { city: { name, country, timezone }, list } = data
-    tempScale = countriesUsingFahrenheit.includes(country) ? 'F' : 'C'
+    tempScale = usesFahrenheit(country) ? 'F' : 'C'
     setLocale(country)
     updateLocation(name)
     initDateTime(timezone)
@@ -427,5 +432,22 @@
     refreshTimer = setTimeout(fetchWeather, 120 * 60 * 1000)
   }
 
-  init()
+  // Only auto-run in a real browser; under a test runner there is no document.
+  if (typeof document !== 'undefined') {
+    init()
+  }
+
+  // Expose pure helpers for unit tests. In the browser `module` is undefined,
+  // so this is skipped and has no effect on the served script.
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      resolveLocale,
+      usesFahrenheit,
+      setLocale,
+      formatTime,
+      formatDate,
+      getTimeByOffset,
+      getCondCategory
+    }
+  }
 })()
