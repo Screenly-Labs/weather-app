@@ -293,7 +293,6 @@ body[data-night="true"]        { --accent: #b6a6f2; }
    mark is the destination a viewer reads and types in themselves. */
 .cta-wrap {
   flex: none;
-  max-inline-size: 26ch;
   text-align: right;
 }
 
@@ -312,6 +311,7 @@ body[data-night="true"]        { --accent: #b6a6f2; }
   font-size: 0.84rem;
   letter-spacing: 0.015em;
   color: var(--ink-dim);
+  white-space: nowrap;
   transition: opacity 0.45s ease, transform 0.45s ease;
 }
 

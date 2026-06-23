@@ -369,11 +369,11 @@
    * screenly.io as the destination a viewer types in themselves.
    */
   const ctaMessages = [
-    'Power your screens with Screenly',
-    'Running in a browser? Put it on Screenly',
-    'Switch to secure, managed digital signage',
-    'Secure by default. Managed remotely.',
-    'Join 10,000+ screens powered by Screenly'
+    'Powerful, secure, simple digital signage',
+    'Secure by default — SOC 2, zero-trust',
+    'Manage every screen from anywhere',
+    'Run Screenly on hardware you already own',
+    'Powering 10,000+ screens worldwide'
   ]
   let ctaIndex = 0
 

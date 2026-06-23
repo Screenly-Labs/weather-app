@@ -17,7 +17,7 @@ const Footer = () => html`
 
     <aside class="cta-wrap anim" style="--d: 520ms">
       <div class="upgrade-banner">
-        <span class="cta-msg" id="cta-msg">Power your screens with Screenly</span>
+        <span class="cta-msg" id="cta-msg">Powerful, secure, simple digital signage</span>
         <span class="cta-lockup">
           <img class="cta-logo" src="/static/images/screenly-logo.svg" alt="Screenly" width="178" height="40" />
           <span class="cta-url">screenly.io</span>
