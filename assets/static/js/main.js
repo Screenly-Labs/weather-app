@@ -286,7 +286,11 @@
 
     const detail = document.querySelector('#detail')
     if (detail) {
-      detail.innerHTML = parts.map((part) => `<span>${part}</span>`).join('')
+      detail.replaceChildren(...parts.map((part) => {
+        const span = document.createElement('span')
+        span.textContent = part
+        return span
+      }))
     }
   }
 
