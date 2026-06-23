@@ -365,12 +365,12 @@
    *
    * The banner is only shown on non-Screenly devices (a browser tab or a rival
    * signage system), so the copy pitches the viewer to switch to Screenly. It
-   * is non-interactive — a digital sign has no cursor/touch — and surfaces
+   * is non-interactive (a digital sign has no cursor/touch) and surfaces
    * screenly.io as the destination a viewer types in themselves.
    */
   const ctaMessages = [
     'Powerful, secure, simple digital signage',
-    'Secure by default — SOC 2, zero-trust',
+    'Secure by default: SOC 2, zero-trust',
     'Manage every screen from anywhere',
     'Run Screenly on hardware you already own',
     'Powering 10,000+ screens worldwide'
