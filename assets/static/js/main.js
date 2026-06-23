@@ -108,7 +108,7 @@
   }
 
   const updateContent = (id, text) => {
-    document.querySelector(`#${id}`).innerText = text
+    document.querySelector(`#${id}`).textContent = text
   }
 
   const updateAttribute = (id, attr, val) => document.querySelector(`#${id}`).setAttribute(attr, val)
@@ -349,9 +349,9 @@
       const dummyNode = document.querySelector('.dummy-node')
       const node = dummyNode.cloneNode(true)
       node.classList.remove('dummy-node')
-      node.querySelector('.item-temp').innerText = getTemp(temp)
+      node.querySelector('.item-temp').textContent = getTemp(temp)
       node.querySelector('.item-icon').setAttribute('src', `${iconsPath}/${icon}.svg`)
-      node.querySelector('.item-time').innerText = index === 0 ? 'Current' : formatTime(dateTime)
+      node.querySelector('.item-time').textContent = index === 0 ? 'Current' : formatTime(dateTime)
 
       frag.appendChild(node)
     })
@@ -424,13 +424,13 @@
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
 
     if (reduceMotion) {
-      msg.innerText = next
+      msg.textContent = next
       return
     }
 
     msg.classList.add('is-out')
     setTimeout(() => {
-      msg.innerText = next
+      msg.textContent = next
       msg.classList.remove('is-out')
     }, 450)
   }
