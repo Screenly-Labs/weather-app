@@ -1,30 +1,24 @@
+import { afterEach, describe, expect, it } from 'bun:test'
 import weather from './weather'
-
-/* eslint-env jest */
-/* global getMiniflareFetchMock */
 
 const env = { OPEN_WEATHER_API_KEY: 'test-key' }
 const ctx = { waitUntil () {} }
+const ORIGINAL_FETCH = globalThis.fetch
 
-const ORIGIN = 'https://api.openweathermap.org'
+const json = (body, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
-const call = (path = 'http://localhost/') =>
-  weather.fetch(new Request(path), env, ctx)
+const call = (path = 'http://localhost/', e = env) =>
+  weather.fetch(new Request(path), e, ctx)
+
+afterEach(() => {
+  globalThis.fetch = ORIGINAL_FETCH
+})
 
 describe('Weather route', () => {
-  let fetchMock
-
-  beforeAll(() => {
-    fetchMock = getMiniflareFetchMock()
-    fetchMock.disableNetConnect()
-  })
-
   it('returns the upstream payload on success', async () => {
     const payload = { city: { name: 'Testville' }, list: [] }
-    fetchMock
-      .get(ORIGIN)
-      .intercept({ method: 'GET', path: () => true })
-      .reply(200, payload)
+    globalThis.fetch = async () => json(payload)
 
     const res = await call('http://localhost/?lat=37.77&lng=-122.43')
 
@@ -33,19 +27,16 @@ describe('Weather route', () => {
   })
 
   it('escapes query params and the api key in the upstream URL', async () => {
-    let capturedPath
-    fetchMock
-      .get(ORIGIN)
-      .intercept({
-        method: 'GET',
-        path (p) { capturedPath = p; return true }
-      })
-      .reply(200, {})
+    let capturedUrl
+    globalThis.fetch = async (url) => {
+      capturedUrl = url
+      return json({})
+    }
 
     // An injection attempt that tries to smuggle a second appid param.
-    await call('http://localhost/?lat=37.77&lng=' + encodeURIComponent('-122&appid=evil'))
+    await call(`http://localhost/?lat=37.77&lng=${encodeURIComponent('-122&appid=evil')}`)
 
-    const url = new URL(ORIGIN + capturedPath)
+    const url = new URL(capturedUrl)
 
     // The injected value must stay a single `lon` param, not a second appid.
     expect(url.searchParams.get('lon')).toBe('-122&appid=evil')
@@ -55,10 +46,7 @@ describe('Weather route', () => {
   })
 
   it('returns 502 when the upstream responds with a non-OK status', async () => {
-    fetchMock
-      .get(ORIGIN)
-      .intercept({ method: 'GET', path: () => true })
-      .reply(401, { cod: 401, message: 'Invalid API key.' })
+    globalThis.fetch = async () => json({ cod: 401, message: 'Invalid API key.' }, 401)
 
     const res = await call('http://localhost/?lat=37.77&lng=-122.43')
 
@@ -67,29 +55,24 @@ describe('Weather route', () => {
   })
 
   it('returns 504 when the upstream request times out', async () => {
-    // Delay the reply well past the (tiny) configured timeout so the route's
-    // own AbortController fires for real.
-    fetchMock
-      .get(ORIGIN)
-      .intercept({ method: 'GET', path: () => true })
-      .reply(200, {})
-      .delay(200)
+    // Resolve well past the (tiny) configured timeout, but reject as soon as the
+    // route's own AbortController fires, so the timeout path runs for real.
+    globalThis.fetch = (_url, opts) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve(json({})), 200)
+      opts.signal.addEventListener('abort', () => {
+        clearTimeout(timer)
+        reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+      })
+    })
 
-    const res = await weather.fetch(
-      new Request('http://localhost/?lat=37.77&lng=-122.43'),
-      { ...env, WEATHER_TIMEOUT_MS: '10' },
-      ctx
-    )
+    const res = await call('http://localhost/?lat=37.77&lng=-122.43', { ...env, WEATHER_TIMEOUT_MS: '10' })
 
     expect(res.status).toBe(504)
     expect(await res.json()).toEqual({ error: true })
   })
 
   it('returns 502 when fetch fails for other reasons', async () => {
-    fetchMock
-      .get(ORIGIN)
-      .intercept({ method: 'GET', path: () => true })
-      .replyWithError(new Error('network down'))
+    globalThis.fetch = async () => { throw new Error('network down') }
 
     const res = await call('http://localhost/?lat=37.77&lng=-122.43')
 

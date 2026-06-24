@@ -1,11 +1,24 @@
 import { html } from 'hono/html'
 
 const Layout = (props) => html`<!DOCTYPE html>
-  <html>
+  <html lang="en">
     <head>
       <title>Screenly Weather App - Weather Forecast</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="preload" href="/static/fonts/Barlow-Regular.woff" as="font" />
+      <link
+        rel="preload"
+        href="/static/fonts/fraunces-latin-standard-normal.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+      <link
+        rel="preload"
+        href="/static/fonts/hanken-grotesk-latin-wght-normal.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
       <link rel="stylesheet" href="/static/styles/main.css" />
       <script
         src="https://js.sentry-cdn.com/${props.sentryId}.min.js"

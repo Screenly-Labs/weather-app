@@ -1,27 +1,15 @@
 import { html } from 'hono/html'
 
 const Header = () => html`
-  <section class="header">
-    <div class="location">
-      <span class="location-item">
-        <img src="/static/images/icons/map-pin.svg" />
-        <span id="city"></span>
-      </span>
-
-      <span class="location-item">
-        <img src="/static/images/icons/clock.svg" />
-        <span id="time"></span>
-      </span>
-
-      <span class="location-item">
-        <img src="/static/images/icons/calendar.svg" />
-        <span id="date"></span>
-      </span>
-    </div>
-    <a href="https://screenly.io" target="_blank" class="upgrade-banner">
-      For a simple and secure display solution, visit Screenly.io
-    </a>
-  </section>
+  <header class="masthead">
+    <span class="place anim" style="--d: 0ms">
+      <img src="/static/images/icons/map-pin.svg" alt="" width="24" height="24" />
+      <span id="city"></span>
+    </span>
+    <span class="clock anim" style="--d: 80ms">
+      <span id="time"></span><span class="clock-sep">·</span><span class="date" id="date"></span>
+    </span>
+  </header>
   `
 
 export default Header
