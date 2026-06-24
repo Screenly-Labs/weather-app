@@ -26,6 +26,19 @@ const ASSET_VERSION = (() => {
 })()
 
 app.use('*', logger())
+
+// Cache headers for static assets. Asset URLs in the HTML carry ?v=<version>
+// (see ASSET_VERSION / the components), so a versioned request is safe to cache
+// forever — a content change ships a new ?v and therefore a new URL. Legacy
+// unversioned URLs (only referenced by pre-cache-busting HTML still sitting in
+// the edge cache) get a short TTL so they can pick up the current bundle.
+app.use('/static/*', async (c, next) => {
+  await next()
+  const versioned = c.req.query('v') !== undefined
+  c.header('Cache-Control', versioned
+    ? 'public, max-age=31536000, immutable'
+    : 'public, max-age=300')
+})
 app.use('/static/*', serveStatic({ root: './', manifest }))
 
 app.get('/', async (c) => {
@@ -61,7 +74,7 @@ app.get('/', async (c) => {
     if (!response) {
       const coordinates = trimCoordinates({ lat: qLat, lng: qLng })
       const env = c.env.ENV
-      const body = (<App {...coordinates} env={env} />).toString()
+      const body = (<App {...coordinates} env={env} v={ASSET_VERSION} />).toString()
       response = new Response(body, {
         status: 200,
         headers: {

@@ -10,29 +10,34 @@ import { run as syncFonts } from './sync-fonts.js'
 // Vendor the Bun-managed webfonts into ./assets before minifying.
 await syncFonts()
 
+// main.js is the only JS *entry*. It imports ./locale.js (the unit-tested pure
+// helpers), and `external: []` tells Bun to inline that import. main.js itself
+// exports nothing, so the bundle is a self-executing classic script with no
+// `export` token — loadable by every cached HTML variant (plain <script> or
+// type="module") so a deploy never strands cached pages. locale.js is a
+// dependency, not an entry, so it is never built/served on its own.
+const cssEntries = []
+for await (const path of new Glob('assets/static/styles/*.css').scan('.')) {
+  cssEntries.push(path)
+}
+
 const targets = [
-  { label: 'JS', glob: 'assets/static/js/*.js' },
-  { label: 'CSS', glob: 'assets/static/styles/*.css' }
+  // Bundle local imports (external: []).
+  { label: 'JS', entries: ['assets/static/js/main.js'], external: [] },
+  // Leave url(/static/...) refs untouched rather than resolving them as
+  // build-time assets (external: ['*']).
+  { label: 'CSS', entries: cssEntries, external: ['*'] }
 ]
 
 let count = 0
 
-for (const { label, glob } of targets) {
-  for await (const path of new Glob(glob).scan('.')) {
+for (const { label, entries, external } of targets) {
+  for (const path of entries) {
     const result = await Bun.build({
       entrypoints: [path],
       minify: true,
       target: 'browser',
-      // Keep Bun's default 'esm' format. main.js exposes test helpers via
-      // module.exports, so Bun emits it as an ES module ending in `export
-      // default Pq()`, where Pq is the lazy factory wrapping the app's init.
-      // The page loads it with <script type="module">, which both accepts the
-      // `export` and evaluates that statement, invoking Pq() to run the app.
-      // Do NOT switch to format:'iife': it strips the export but never calls
-      // Pq, so the bundle defines everything and runs nothing (blank page).
-      // Leave references untouched (e.g. CSS `url(/static/...)` absolute paths)
-      // rather than trying to resolve and bundle them as build-time assets.
-      external: ['*']
+      external
     })
 
     if (!result.success) {

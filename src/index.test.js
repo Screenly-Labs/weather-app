@@ -60,15 +60,17 @@ describe('Routing', () => {
 
   it('renders the page HTML via hono JSX (server-side)', () => {
     // Mirrors the route's `new Response((<App/>).toString())`.
-    const body = jsx(App, { env: 'production', lat: '51.5', lng: '-0.12' }).toString()
+    const body = jsx(App, { env: 'production', lat: '51.5', lng: '-0.12', v: 'testver' }).toString()
     expect(body).toContain('<!DOCTYPE html>')
     expect(body).toContain('id="weather-item-list"')
     expect(body).toContain('weather-fx')
     expect(body).not.toContain('[object Object]')
-    // main.js is bundled as an ES module (ends in `export default`), so it must
-    // be loaded as a module or the browser throws on the `export` token and the
-    // page never populates.
-    expect(body).toContain('<script type="module" src="/static/js/main.js">')
+    // main.js is a self-executing classic script (no ES module export), loaded
+    // via a plain async <script> so cached HTML stays compatible across deploys.
+    expect(body).toContain('<script src="/static/js/main.js?v=testver" async defer>')
+    // Static asset URLs are cache-busted with the deploy version.
+    expect(body).toContain('/static/styles/main.css?v=testver')
+    expect(body).toContain("window.__ASSET_V='testver'")
   })
 })
 
@@ -110,6 +112,19 @@ describe('Page caching (/ route)', () => {
 
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('CACHED PAGE')
+  })
+})
+
+describe('Static asset caching (/static/*)', () => {
+  it('caches versioned assets immutably and unversioned ones briefly', async () => {
+    // Versioned URL (?v=...) is content-addressed via the query, so it is safe
+    // to cache forever; the unversioned legacy URL must stay short-lived so old
+    // cached HTML can pick up the current bundle.
+    const versioned = await app.request('http://localhost/static/js/main.js?v=abc')
+    expect(versioned.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+
+    const unversioned = await app.request('http://localhost/static/js/main.js')
+    expect(unversioned.headers.get('Cache-Control')).toBe('public, max-age=300')
   })
 })
 
