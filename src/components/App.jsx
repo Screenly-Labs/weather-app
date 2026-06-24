@@ -9,17 +9,17 @@ import { sentryIds, gaIds } from '../constants'
 const FX_PARTICLES = 30
 
 const App = (props) => {
-  const { env, lat, lng } = props
+  const { env, lat, lng, v } = props
   const sentryId = sentryIds[env]
   const gaId = gaIds[env]
   return (
-    <Layout sentryId={sentryId} gaId={gaId}>
+    <Layout sentryId={sentryId} gaId={gaId} v={v}>
       <div class='content playing'>
         <div class='weather-fx' aria-hidden='true'>
           {Array.from({ length: FX_PARTICLES }).map(() => <span class='fx-p' />)}
         </div>
-        <Header />
-        <Footer />
+        <Header v={v} />
+        <Footer v={v} />
       </div>
       <span id='location-data' data-location-lat={lat} data-location-lng={lng} />
     </Layout>

@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 
-// Unit tests for the client-side locale logic in assets/static/js/main.js.
-// main.js is a browser IIFE that exposes its pure helpers via module.exports
-// (and skips its browser-only init when there is no document), so a default
-// import here resolves to that exports object.
-import main from '../assets/static/js/main.js'
-
-const {
+// Unit tests for the client-side locale logic in assets/static/js/locale.js.
+// These pure helpers were extracted from main.js into their own ES module so
+// they can be imported directly here, while main.js stays an export-free
+// self-executing browser script (bundled with locale.js inlined).
+import {
   resolveLocale,
   usesFahrenheit,
   setLocale,
@@ -14,7 +12,7 @@ const {
   formatDate,
   getTimeByOffset,
   getCondCategory
-} = main
+} from '../assets/static/js/locale.js'
 
 // Saturday 2026-06-20 13:30:00 UTC, as the unix seconds main.js works with.
 const DT = Math.floor(Date.parse('2026-06-20T13:30:00Z') / 1000)
