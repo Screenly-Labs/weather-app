@@ -1,12 +1,28 @@
 import { html } from 'hono/html'
 
 const Layout = (props) => html`<!DOCTYPE html>
-  <html>
+  <html lang="en">
     <head>
       <title>Screenly Weather App - Weather Forecast</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="preload" href="/static/fonts/Barlow-Regular.woff" as="font" />
-      <link rel="stylesheet" href="/static/styles/main.css" />
+      <link
+        rel="preload"
+        href="/static/fonts/fraunces-latin-standard-normal.woff2?v=${props.v}"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+      <link
+        rel="preload"
+        href="/static/fonts/hanken-grotesk-latin-wght-normal.woff2?v=${props.v}"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+      <link rel="stylesheet" href="/static/styles/main.css?v=${props.v}" />
+      <!-- Expose the asset version so main.js can cache-bust the image URLs it
+           builds at runtime (weather icons, backgrounds). -->
+      <script>window.__ASSET_V='${props.v}'</script>
       <script
         src="https://js.sentry-cdn.com/${props.sentryId}.min.js"
         crossorigin="anonymous"
@@ -20,7 +36,10 @@ const Layout = (props) => html`<!DOCTYPE html>
 
         gtag('config', '${props.gaId}');
       </script>
-      <script src="/static/js/main.js" async defer></script>
+      <!-- main.js is a self-executing classic script (no ES module export), so
+           a plain async <script> runs it and any cached HTML stays compatible
+           across deploys. The ?v= busts it whenever the bundle changes. -->
+      <script src="/static/js/main.js?v=${props.v}" async defer></script>
     </head>
     <body>
       ${props.children}

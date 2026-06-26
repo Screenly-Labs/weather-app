@@ -1,39 +1,39 @@
 # Screenly Weather App
 
-This app has been built with [Hono](https://github.com/honojs/hono/) for Cloudflare Workers.
+**Warning:** This project has been abandoned in favor of the [Weather Edge App](https://github.com/Screenly/Playground/tree/master/edge-apps/weather).
+
+![Weather App Screenshot](https://github.com/Screenly/standalone-app-store/blob/master/_assets/img/app-weather.jpg?raw=true)
+
+This is an example asset for Screenly as part of the [Screenly Playground](https://github.com/Screenly/playground).
+
+You can view the live demo at [weather.srly.io](https://weather.srly.io/).
+
+When running on a Screenly device with [asset metadata enabled](https://github.com/Screenly/playground/blob/master/asset-metadata/README.md), the location will automatically be set. If not, you can [this wizard](https://app-store.srly.io/weather/) to set your location.
 
 ## Requirements
 
-Install [Wrangler](https://developers.cloudflare.com/workers/wrangler/)
+This project uses [Bun](https://bun.sh/) as its package manager. Install dependencies with:
 
 ```bash
-npm install -g wrangler
+bun install
 ```
+
+This installs [Wrangler](https://developers.cloudflare.com/workers/wrangler/) locally. Run it via `bunx wrangler` (or install it globally with `bun add -g wrangler`).
 
 Login to Cloudflare
 
 ```bash
-wrangler login
+bunx wrangler login
 ```
-
-## Scripts
 
 Run the project in dev mode
 
 ```bash
-wrangler dev
-
-or
-
-npm run dev
+bun run dev
 ```
 
-Publish worker
+Deploy worker
 
 ```bash
-wrangler publish --env [environment name]
-
-or
-
-npm run deploy // Deploy to dev env
+bunx wrangler deploy --env [environment name]
 ```
