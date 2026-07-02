@@ -14,17 +14,15 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-      "lat": {
-        "type": "number",
-        "title": "Latitude",
+      "location": {
+        "type": "object",
+        "title": "Location",
         "description": "Optional. Leave unset to auto-detect the screen's location by IP.",
-        "x-widget": "location-map"
-      },
-      "lng": {
-        "type": "number",
-        "title": "Longitude",
-        "description": "Optional. Leave unset to auto-detect the screen's location by IP.",
-        "x-widget": "location-map"
+        "x-widget": "location-map",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        }
       },
       "locale": {
         "type": "string",
@@ -45,6 +43,6 @@
   },
   "launch": {
     "baseUrl": "https://weather.srly.io/",
-    "template": "{?lat,lng,locale,24h}"
+    "template": "{?location*,locale,24h}"
   }
 }

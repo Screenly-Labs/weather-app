@@ -179,11 +179,15 @@ describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
     expect(body.manifestVersion).toBe('1')
     expect(body.id).toBe('weather')
     expect(body.launch.baseUrl).toBe('https://weather.srly.io/')
-    // The launch template's variables must be the accepted query params. A
-    // single {?...} expression (not {?lat,lng}{&locale}{&24h}) keeps every
-    // subset valid: omitting location auto-detects it, and a settings-only
-    // launch still yields a well-formed ?24h=… instead of a stray &24h=….
-    expect(Object.keys(body.settings.properties)).toEqual(['lat', 'lng', 'locale', '24h'])
+    // The launch template's variables are the setting names. A single {?...}
+    // expression (not {?location*}{&locale}{&24h}) keeps every subset valid:
+    // omitting location auto-detects it, and a settings-only launch still yields
+    // a well-formed ?24h=… instead of a stray &24h=…. The location object is
+    // exploded ({?location*}) so it emits the app's lat/lng query params.
+    expect(Object.keys(body.settings.properties)).toEqual(['location', 'locale', '24h'])
+    expect(body.settings.properties.location.type).toBe('object')
+    expect(Object.keys(body.settings.properties.location.properties)).toEqual(['lat', 'lng'])
+    expect(body.settings.properties.location['x-widget']).toBe('location-map')
     expect(body.settings.properties['24h'].enum).toEqual(['', '0', '1'])
     expect(body.settings.properties.locale.enum).toContain('de-DE')
     // Region-qualified locales only: a bare 'en' would render a US-style 12h
@@ -196,7 +200,7 @@ describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
     }
     const { enum: locEnum, 'x-enumLabels': locLabels } = body.settings.properties.locale
     expect(locEnum.length).toBe(locLabels.length)
-    expect(body.launch.template).toBe('{?lat,lng,locale,24h}')
+    expect(body.launch.template).toBe('{?location*,locale,24h}')
   })
 
   it('is not shadowed by the location redirect on the / route', async () => {
