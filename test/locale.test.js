@@ -8,6 +8,7 @@ import {
   resolveLocale,
   usesFahrenheit,
   setLocale,
+  setLocaleOverride,
   setTimeFormat,
   resolveHour12,
   formatTime,
@@ -122,6 +123,41 @@ describe('12h/24h override (?24h launch setting)', () => {
     expect(timeAt(-4)).not.toMatch(/AM|PM/i)
     setTimeFormat('') // back to locale default (12h for en-US)
     expect(timeAt(-4)).toMatch(/AM|PM/i)
+  })
+})
+
+describe('locale override (?locale launch setting)', () => {
+  // The override is sticky module state; clear it and reset to a known locale
+  // after each case so the other tests keep seeing the location default.
+  afterEach(() => {
+    setLocaleOverride('')
+    setTimeFormat('')
+    setLocale('GB')
+  })
+
+  it('wins over the country-derived locale passed to setLocale', () => {
+    setLocaleOverride('de-DE')
+    setLocale('US') // location country would normally give en-US (12h)
+    expect(timeAt(2)).toBe('15:30') // de-DE renders 24h
+    expect(dateAt(2)).toMatch(/Juni/) // German month name
+  })
+
+  it('applies immediately, before any setLocale(country) call', () => {
+    setLocaleOverride('fr-FR')
+    expect(dateAt(2)).toMatch(/juin/) // French, without a setLocale() call
+  })
+
+  it('composes with the ?24h override (language from locale, format from 24h)', () => {
+    setLocaleOverride('de-DE') // normally 24h
+    setTimeFormat('0') // force 12h
+    expect(timeAt(2)).toMatch(/^3:30(\s| )?PM$/i)
+  })
+
+  it('empty override restores auto-detect from the location country', () => {
+    setLocaleOverride('de-DE')
+    setLocaleOverride('') // clear
+    setLocale('US')
+    expect(timeAt(-4)).toMatch(/^9:30(\s| )?AM$/i) // back to en-US
   })
 })
 

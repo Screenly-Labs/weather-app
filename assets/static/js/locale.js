@@ -35,6 +35,9 @@ let locale = 'en-GB'
 // clock, false forces 24-hour, undefined leaves the choice to the locale. This
 // is the query param the signage-app manifest's "24h" setting drives.
 let hour12Override
+// Explicit BCP-47 locale from the ?locale launch setting. When set it wins over
+// the displayed location's country-derived locale; undefined = auto-detect.
+let localeOverride
 let timeFormatter
 let dateFormatterLong
 let dateFormatterShort
@@ -82,13 +85,14 @@ export const setTimeFormat = (value) => {
   buildFormatters()
 }
 
-export const setLocale = (code) => {
-  locale = resolveLocale(code)
+const applyLocale = (loc) => {
+  locale = loc
   buildFormatters()
   // The chrome is authored in English (LTR); only the city, date and time
   // render in the location's language. Tag just those elements with the right
   // lang/dir so assistive tech and RTL scripts (e.g. ar) are handled without
-  // mirroring the whole LTR layout.
+  // mirroring the whole LTR layout. Read `locale` after buildFormatters so a
+  // fallback (malformed override) is reflected in the tag.
   if (typeof document !== 'undefined') {
     const dir = rtlLanguages.includes(locale.split('-')[0]) ? 'rtl' : 'ltr'
     for (const id of ['city', 'date', 'time']) {
@@ -100,6 +104,17 @@ export const setLocale = (code) => {
     }
   }
 }
+
+// Apply the ?locale launch setting (a BCP-47 tag, or '' to auto-detect). A set
+// override wins over the country passed to setLocale; it is applied at once so
+// formatting is correct before weather data arrives, and stays sticky across
+// the later setLocale(country) rebuild.
+export const setLocaleOverride = (value) => {
+  localeOverride = value || undefined
+  if (localeOverride) applyLocale(localeOverride)
+}
+
+export const setLocale = (code) => applyLocale(localeOverride || resolveLocale(code))
 
 // Build defaults up front so the clock works even before any data arrives.
 buildFormatters()
