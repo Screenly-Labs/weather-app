@@ -179,6 +179,9 @@ describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
     expect(body.manifestVersion).toBe('1')
     expect(body.id).toBe('weather')
     expect(body.launch.baseUrl).toBe('https://weather.srly.io/')
+    // Pacing defaults only: the app is one static page (no self-advancing
+    // steps), and on-screen duration is a playlist decision, not an app property.
+    expect(body.playback).toEqual({ pacing: 'fixed', refreshIntervalS: 3600 })
     // The launch template's variables are the setting names. A single {?...}
     // expression (not {?location*}{&locale}{&24h}) keeps every subset valid:
     // omitting location auto-detects it, and a settings-only launch still yields
