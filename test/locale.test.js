@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import {
   resolveLocale,
   usesFahrenheit,
+  unitsCountry,
+  regionOf,
   setLocale,
   setLocaleOverride,
   setTimeFormat,
@@ -158,6 +160,38 @@ describe('locale override (?locale launch setting)', () => {
     setLocaleOverride('') // clear
     setLocale('US')
     expect(timeAt(-4)).toMatch(/^9:30(\s| )?AM$/i) // back to en-US
+  })
+})
+
+describe('temperature units follow the locale override region', () => {
+  afterEach(() => setLocaleOverride(''))
+
+  it('regionOf extracts the ISO-3166 region subtag', () => {
+    expect(regionOf('en-US')).toBe('US')
+    expect(regionOf('de-DE')).toBe('DE')
+    expect(regionOf('zh-Hant-TW')).toBe('TW')
+    expect(regionOf('ha-Latn-NG')).toBe('NG')
+    expect(regionOf('ar')).toBe('') // no region subtag
+    expect(regionOf('')).toBe('')
+  })
+
+  it('uses the override region for units, over the location country', () => {
+    setLocaleOverride('en-US') // US -> Fahrenheit
+    expect(usesFahrenheit(unitsCountry('DE'))).toBe(true) // location Germany, region US
+    setLocaleOverride('de-DE') // DE -> Celsius
+    expect(usesFahrenheit(unitsCountry('US'))).toBe(false) // location US, region DE
+  })
+
+  it('falls back to the location country for a region-less override', () => {
+    setLocaleOverride('ar') // no region
+    expect(usesFahrenheit(unitsCountry('US'))).toBe(true) // follows location US
+    expect(usesFahrenheit(unitsCountry('DE'))).toBe(false)
+  })
+
+  it('uses the location country when there is no override', () => {
+    setLocaleOverride('')
+    expect(usesFahrenheit(unitsCountry('US'))).toBe(true)
+    expect(usesFahrenheit(unitsCountry('FR'))).toBe(false)
   })
 })
 

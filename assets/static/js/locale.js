@@ -116,6 +116,23 @@ export const setLocaleOverride = (value) => {
 
 export const setLocale = (code) => applyLocale(localeOverride || resolveLocale(code))
 
+// ISO-3166 region subtag of a BCP-47 tag ('en-US' -> 'US', 'zh-Hant-TW' -> 'TW',
+// 'ha-Latn-NG' -> 'NG'), or '' when the tag carries no region ('ar', 'fr') or is
+// malformed. Uses the built-in Intl.Locale parser rather than a hand-rolled one.
+export const regionOf = (tag) => {
+  try {
+    return new Intl.Locale(tag).region || ''
+  } catch {
+    return ''
+  }
+}
+
+// The country whose unit convention (°C/°F) applies. A ?locale override that
+// carries a region wins, so temperature units follow the chosen region; with no
+// override (or a region-less one) units follow the displayed location's country.
+export const unitsCountry = (locationCountry) =>
+  (localeOverride && regionOf(localeOverride)) || locationCountry
+
 // Build defaults up front so the clock works even before any data arrives.
 buildFormatters()
 

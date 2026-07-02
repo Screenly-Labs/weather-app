@@ -1,5 +1,6 @@
 import {
   usesFahrenheit,
+  unitsCountry,
   celsiusToFahrenheit,
   setLocale,
   setLocaleOverride,
@@ -284,7 +285,8 @@ import {
     // The API returns { error: true } on upstream failures; skip those.
     if (!data?.city) return
     const { city: { name, country, timezone }, list } = data
-    tempScale = usesFahrenheit(country) ? 'F' : 'C'
+    // Units follow the ?locale override's region when set, else the location.
+    tempScale = usesFahrenheit(unitsCountry(country)) ? 'F' : 'C'
     setLocale(country)
     updateLocation(name)
     initDateTime(timezone)
