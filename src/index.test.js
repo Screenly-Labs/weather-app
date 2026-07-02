@@ -186,6 +186,11 @@ describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
     expect(Object.keys(body.settings.properties)).toEqual(['lat', 'lng', 'locale', '24h'])
     expect(body.settings.properties['24h'].enum).toEqual(['', '0', '1'])
     expect(body.settings.properties.locale.enum).toContain('de-DE')
+    // Region-qualified locales only: a bare 'en' would render a US-style 12h
+    // clock instead of the app's neutral default, so it must not be offered.
+    expect(body.settings.properties.locale.enum).not.toContain('en')
+    const { enum: locEnum, 'x-enumLabels': locLabels } = body.settings.properties.locale
+    expect(locEnum.length).toBe(locLabels.length)
     expect(body.launch.template).toBe('{?lat,lng,locale,24h}')
   })
 

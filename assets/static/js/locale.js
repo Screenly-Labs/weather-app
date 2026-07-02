@@ -19,11 +19,27 @@ const countriesUsingFahrenheit = [
 export const celsiusToFahrenheit = (temp) => ((1.8 * temp) + 32)
 export const usesFahrenheit = (code) => countriesUsingFahrenheit.includes(code)
 
-// Recognizes real ISO-3166 regions. With fallback:'none' a known country yields
-// its name, while unknown-but-well-formed codes (e.g. 'XX') yield undefined and
-// malformed ones throw — the gate that keeps resolveLocale on its neutral
-// fallback for junk/absent country codes from the edge.
-const regionNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' })
+// Countries whose CLDR likely locale is a non-Latin script the vendored (Latin
+// only) fonts cannot render: pin them to English so live screens stay legible
+// instead of showing tofu or flipping to RTL. HK/PK carried English in the old
+// hand table; SS/EH default to English too.
+const LOCALE_OVERRIDES = { HK: 'en-HK', PK: 'en-PK', SS: 'en-SS', EH: 'en-EH' }
+
+// CLDR grouping / non-country region codes (plus the codes Cloudflare emits for
+// non-geolocatable traffic) that Intl.DisplayNames still names but that must not
+// resolve to a locale: they fall through to the neutral signage fallback.
+const NON_COUNTRY = new Set(['ZZ', 'EU', 'EZ', 'UN', 'QO', 'AP'])
+
+// Lazily built Intl.DisplayNames that recognizes real ISO-3166 regions (with
+// fallback:'none' a known country yields its name, unknown-but-well-formed codes
+// yield undefined). Built on first use inside a try, not at module load, so an
+// engine without Intl.DisplayNames degrades to the fallback instead of throwing
+// while locale.js loads and taking the whole inlined bundle down with it.
+let regionNames
+const knownRegion = (code) => {
+  if (!regionNames) regionNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' })
+  return Boolean(regionNames.of(code))
+}
 
 // Default locale when the country is unknown. en-GB gives 24h time and
 // neutral English month/day names (better for signage than the player's
@@ -72,13 +88,15 @@ const buildFormatters = () => {
 
 // Country (ISO-3166 alpha-2) -> BCP-47 locale, via CLDR likely-subtags built
 // into the engine (Intl.Locale.maximize), so there is no hand-maintained table:
-// 'US' -> 'en-US', 'BR' -> 'pt-BR', 'HK' -> 'zh-HK'. The script subtag is
+// 'US' -> 'en-US', 'BR' -> 'pt-BR', 'DE' -> 'de-DE'. The script subtag is
 // dropped because the region re-derives its likely script (e.g. 'zh-TW' still
-// renders Traditional). Unknown/absent/malformed codes get the neutral signage
-// fallback rather than CLDR's world default.
+// renders Traditional). A few countries are pinned to English (LOCALE_OVERRIDES)
+// for font/RTL reasons; unknown, non-country, or malformed codes get the neutral
+// signage fallback rather than CLDR's world default.
 export const resolveLocale = (code) => {
+  if (LOCALE_OVERRIDES[code]) return LOCALE_OVERRIDES[code]
   try {
-    if (!regionNames.of(code) || code === 'ZZ') return FALLBACK_LOCALE
+    if (NON_COUNTRY.has(code) || !knownRegion(code)) return FALLBACK_LOCALE
     const max = new Intl.Locale(`und-${code}`).maximize()
     return `${max.language}-${max.region}`
   } catch {
@@ -99,7 +117,12 @@ export const resolveHour12 = (value) => {
 // Apply the ?24h launch setting (see resolveHour12). Passing '' / undefined /
 // any unrecognized value clears the override and restores the locale default.
 export const setTimeFormat = (value) => {
-  hour12Override = resolveHour12(value)
+  const next = resolveHour12(value)
+  // Skip the formatter rebuild when nothing changes (the common no-override
+  // path at startup), so init() does not rebuild on top of the module-load and
+  // setLocale builds for no reason.
+  if (next === hour12Override) return
+  hour12Override = next
   buildFormatters()
 }
 
@@ -123,12 +146,25 @@ const applyLocale = (loc) => {
   }
 }
 
+// True when the engine actually has data for a BCP-47 tag. A well-formed but
+// unreal tag (e.g. 'zzzzz') is NOT caught by buildFormatters' try/catch because
+// Intl.DateTimeFormat silently falls back to the default locale rather than
+// throwing, so validate up front instead.
+const isSupportedLocale = (tag) => {
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([tag]).length > 0
+  } catch {
+    return false
+  }
+}
+
 // Apply the ?locale launch setting (a BCP-47 tag, or '' to auto-detect). A set
 // override wins over the country passed to setLocale; it is applied at once so
 // formatting is correct before weather data arrives, and stays sticky across
-// the later setLocale(country) rebuild.
+// the later setLocale(country) rebuild. An unsupported/malformed tag is ignored
+// (cleared to auto) so it can never pin the display to the engine default.
 export const setLocaleOverride = (value) => {
-  localeOverride = value || undefined
+  localeOverride = value && isSupportedLocale(value) ? value : undefined
   if (localeOverride) applyLocale(localeOverride)
 }
 

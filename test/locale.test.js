@@ -42,13 +42,25 @@ describe('resolveLocale (CLDR likely-subtags)', () => {
 
   it('uses CLDR national language, not a hand-picked signage default', () => {
     // These differ from the old curated table on purpose (CLDR adopted wholesale).
-    expect(resolveLocale('HK')).toBe('zh-HK') // was en-HK
     expect(resolveLocale('KZ')).toBe('ru-KZ') // was kk-Cyrl-KZ
+    expect(resolveLocale('CH')).toBe('de-CH') // was fr-CH
+    expect(resolveLocale('ZA')).toBe('en-ZA') // was af-ZA
   })
 
-  it('falls back to en-GB for unknown / malformed / missing codes (#3)', () => {
+  it('pins font-unsafe countries to English (Latin-only fonts)', () => {
+    // CLDR would give these non-Latin scripts (zh/ur/ar) that the vendored
+    // Latin fonts cannot render; keep them English so screens stay legible.
+    expect(resolveLocale('HK')).toBe('en-HK')
+    expect(resolveLocale('PK')).toBe('en-PK')
+    expect(resolveLocale('SS')).toBe('en-SS')
+    expect(resolveLocale('EH')).toBe('en-EH')
+  })
+
+  it('falls back to en-GB for unknown / non-country / malformed / missing codes (#3)', () => {
     expect(resolveLocale('ZZ')).toBe('en-GB') // CLDR "unknown region"
     expect(resolveLocale('XX')).toBe('en-GB') // well-formed but not assigned
+    expect(resolveLocale('EU')).toBe('en-GB') // grouping code (Cloudflare emits it)
+    expect(resolveLocale('QO')).toBe('en-GB') // outlying-oceania grouping
     expect(resolveLocale('T1')).toBe('en-GB') // malformed (Cloudflare Tor)
     expect(resolveLocale('')).toBe('en-GB')
     expect(resolveLocale(undefined)).toBe('en-GB')
@@ -172,6 +184,15 @@ describe('locale override (?locale launch setting)', () => {
     setLocaleOverride('') // clear
     setLocale('US')
     expect(timeAt(-4)).toMatch(/^9:30(\s| )?AM$/i) // back to en-US
+  })
+
+  it('ignores an unsupported / malformed override tag (stays on auto)', () => {
+    setLocaleOverride('zzzzz') // well-formed but no engine data -> ignored
+    setLocale('US')
+    expect(timeAt(-4)).toMatch(/^9:30(\s| )?AM$/i) // en-US, not the engine default
+    setLocaleOverride('!! junk') // malformed -> ignored
+    setLocale('GB')
+    expect(timeAt(1)).toBe('14:30') // en-GB
   })
 })
 
