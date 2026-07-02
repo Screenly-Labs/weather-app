@@ -189,6 +189,11 @@ describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
     // Region-qualified locales only: a bare 'en' would render a US-style 12h
     // clock instead of the app's neutral default, so it must not be offered.
     expect(body.settings.properties.locale.enum).not.toContain('en')
+    // Languages with no region-qualified sibling must still be selectable
+    // (region-qualified), not silently dropped by the region-less prune.
+    for (const tag of ['ca-ES', 'mn-MN', 'lo-LA', 'tk-TM']) {
+      expect(body.settings.properties.locale.enum).toContain(tag)
+    }
     const { enum: locEnum, 'x-enumLabels': locLabels } = body.settings.properties.locale
     expect(locEnum.length).toBe(locLabels.length)
     expect(body.launch.template).toBe('{?lat,lng,locale,24h}')

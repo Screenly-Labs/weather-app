@@ -25,10 +25,11 @@ export const usesFahrenheit = (code) => countriesUsingFahrenheit.includes(code)
 // hand table; SS/EH default to English too.
 const LOCALE_OVERRIDES = { HK: 'en-HK', PK: 'en-PK', SS: 'en-SS', EH: 'en-EH' }
 
-// CLDR grouping / non-country region codes (plus the codes Cloudflare emits for
-// non-geolocatable traffic) that Intl.DisplayNames still names but that must not
-// resolve to a locale: they fall through to the neutral signage fallback.
-const NON_COUNTRY = new Set(['ZZ', 'EU', 'EZ', 'UN', 'QO', 'AP'])
+// CLDR grouping codes that Intl.DisplayNames still *names* (so knownRegion would
+// accept them) but that must not resolve to a locale: they fall through to the
+// neutral signage fallback. Codes DisplayNames does not name (XX, Cloudflare's
+// AP) or that are malformed (Cloudflare's T1) already fall through on their own.
+const NON_COUNTRY = new Set(['ZZ', 'EU', 'EZ', 'UN', 'QO'])
 
 // Lazily built Intl.DisplayNames that recognizes real ISO-3166 regions (with
 // fallback:'none' a known country yields its name, unknown-but-well-formed codes
@@ -37,7 +38,9 @@ const NON_COUNTRY = new Set(['ZZ', 'EU', 'EZ', 'UN', 'QO', 'AP'])
 // while locale.js loads and taking the whole inlined bundle down with it.
 let regionNames
 const knownRegion = (code) => {
-  if (!regionNames) regionNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' })
+  if (!regionNames) {
+    regionNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' })
+  }
   return Boolean(regionNames.of(code))
 }
 
