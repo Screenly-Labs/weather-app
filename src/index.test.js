@@ -165,6 +165,55 @@ describe('Static asset caching (/static/*)', () => {
   })
 })
 
+describe('Signage-app manifest (/.well-known/signage-app.json)', () => {
+  it('serves the manifest as JSON with open CORS, anonymously', async () => {
+    const res = await app.request('http://localhost/.well-known/signage-app.json')
+
+    expect(res.status).toBe(200)
+    // The store and players fetch it cross-origin, so CORS must be open and the
+    // payload declared as JSON.
+    expect(res.headers.get('Content-Type')).toContain('application/json')
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+
+    const body = await res.json()
+    expect(body.manifestVersion).toBe('1')
+    expect(body.id).toBe('weather')
+    expect(body.launch.baseUrl).toBe('https://weather.srly.io/')
+    // Pacing defaults only: the app is one static page (no self-advancing
+    // steps), and on-screen duration is a playlist decision, not an app property.
+    expect(body.playback).toEqual({ pacing: 'fixed', refreshIntervalS: 3600 })
+    // The launch template's variables are the setting names. A single {?...}
+    // expression (not {?location*}{&locale}{&24h}) keeps every subset valid:
+    // omitting location auto-detects it, and a settings-only launch still yields
+    // a well-formed ?24h=… instead of a stray &24h=…. The location object is
+    // exploded ({?location*}) so it emits the app's lat/lng query params.
+    expect(Object.keys(body.settings.properties)).toEqual(['location', 'locale', '24h'])
+    expect(body.settings.properties.location.type).toBe('object')
+    expect(Object.keys(body.settings.properties.location.properties)).toEqual(['lat', 'lng'])
+    expect(body.settings.properties.location['x-widget']).toBe('location-map')
+    expect(body.settings.properties['24h'].enum).toEqual(['', '0', '1'])
+    expect(body.settings.properties.locale.enum).toContain('de-DE')
+    // Region-qualified locales only: a bare 'en' would render a US-style 12h
+    // clock instead of the app's neutral default, so it must not be offered.
+    expect(body.settings.properties.locale.enum).not.toContain('en')
+    // Languages with no region-qualified sibling must still be selectable
+    // (region-qualified), not silently dropped by the region-less prune.
+    for (const tag of ['ca-ES', 'mn-MN', 'lo-LA', 'tk-TM']) {
+      expect(body.settings.properties.locale.enum).toContain(tag)
+    }
+    const { enum: locEnum, 'x-enumLabels': locLabels } = body.settings.properties.locale
+    expect(locEnum.length).toBe(locLabels.length)
+    expect(body.launch.template).toBe('{?location*,locale,24h}')
+  })
+
+  it('is not shadowed by the location redirect on the / route', async () => {
+    // The / handler 301-redirects location-less requests; the well-known path
+    // must resolve to the manifest, not that redirect.
+    const res = await app.request('http://localhost/.well-known/signage-app.json')
+    expect(res.status).toBe(200)
+  })
+})
+
 describe('Weather API caching (/api/weather)', () => {
   it('caches a 200 upstream response and serves repeats from cache', async () => {
     const cache = makeCache()
