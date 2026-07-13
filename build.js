@@ -8,10 +8,12 @@
 //
 // The assets are served directly from ./assets by wrangler's [site] config and
 // referenced at /static/.... main.js is the bundled artifact (gitignored) built
-// from main.src.js; pass --client to skip the CSS step (used by `bun run dev`,
-// keeping the working-tree CSS unminified for editing). Note: --client also skips
-// the includeDegraded injection, so a `bun run dev` build serves no html.legacy
-// kill-switch — build without --client to exercise degraded mode locally.
+// from main.src.js; pass --client to skip the CSS step entirely (used by `bun run
+// dev`). Skipping the step does not un-minify anything: it just leaves the CSS
+// files on disk untouched, so `bun run dev` serves whatever is already there
+// (minified or not). Note: --client also skips the includeDegraded injection, so
+// if the on-disk CSS lacks the html.legacy kill-switch a `bun run dev` build
+// won't add it; build without --client to exercise degraded mode locally.
 
 import { Glob } from 'bun'
 import { bundleJs, processCss } from '@screenly-labs/signage-kit/build'
