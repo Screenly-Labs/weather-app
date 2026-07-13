@@ -2,6 +2,7 @@
 // degraded mode (shared via @screenly-labs/signage-kit). Must stay first so the
 // shim is in place before any render.
 import '@screenly-labs/signage-kit/polyfills'
+import { removeScreenlyBranding } from '@screenly-labs/signage-kit/branding'
 import {
   usesFahrenheit,
   unitsCountry,
@@ -25,7 +26,6 @@ import {
   let clockTimer
   let weatherTimer
   let refreshTimer
-  let ctaTimer
   let tz
   let currentWeatherId
   let tempScale = 'C'
@@ -41,13 +41,6 @@ import {
   const withVersion = (url) => (assetVersion ? `${url}?v=${assetVersion}` : url)
 
   const getTemp = (temp) => Math.round(tempScale === 'C' ? temp : celsiusToFahrenheit(temp))
-
-  /**
-   * Utility Functions
-   */
-  const generateAnalyticsEvent = (name, payload) => {
-    typeof gtag !== 'undefined' && gtag('event', name, payload) // eslint-disable-line no-undef
-  }
 
   const checkIfNight = (dt) => {
     const dateTime = getTimeByOffset(tz, dt)
@@ -295,12 +288,6 @@ import {
     updateLocation(name)
     initDateTime(timezone)
     updateWeather(list)
-    // Report the resolved location so we can track which places are popular.
-    generateAnalyticsEvent('location', {
-      app_name: 'Screenly Weather App',
-      city: name,
-      country
-    })
   }
 
   /**
@@ -312,74 +299,13 @@ import {
     try {
       const { lat, lng } = getLocation()
       const response = await fetch(`/api/weather?lat=${lat}&lng=${lng}`)
-      const isCacheHit = response.headers.get('cf-cache-status') === 'HIT'
       const data = await response.json()
       updateData(data)
-      generateAnalyticsEvent('cache_status', {
-        app_name: 'Screenly Weather App',
-        cached: isCacheHit,
-        lat,
-        lng
-      })
     } catch (e) {
       console.log(e)
     }
     // Reschedule the next refresh so updates keep coming every 2 hours.
     refreshTimer = setTimeout(fetchWeather, 120 * 60 * 1000)
-  }
-
-  /**
-   * Rotating Screenly call-to-action.
-   *
-   * The banner is only shown on non-Screenly devices (a browser tab or a rival
-   * signage system), so the copy pitches the viewer to switch to Screenly. It
-   * is non-interactive (a digital sign has no cursor/touch) and surfaces
-   * screenly.io as the destination a viewer types in themselves.
-   */
-  const ctaMessages = [
-    'Powerful, secure, simple digital signage',
-    'Secure by default: SOC 2, zero-trust',
-    'Manage every screen from anywhere',
-    'Run Screenly on hardware you already own',
-    'Powering 10,000+ screens worldwide'
-  ]
-  let ctaIndex = 0
-
-  const rotateCta = () => {
-    const msg = document.querySelector('#cta-msg')
-    if (!msg) return
-
-    ctaIndex = (ctaIndex + 1) % ctaMessages.length
-    const next = ctaMessages[ctaIndex]
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
-
-    if (reduceMotion) {
-      msg.textContent = next
-      return
-    }
-
-    msg.classList.add('is-out')
-    setTimeout(() => {
-      msg.textContent = next
-      msg.classList.remove('is-out')
-    }, 450)
-  }
-
-  const setBanner = () => {
-    const banner = document.querySelector('.upgrade-banner')
-    const { userAgent } = navigator
-    const isScreenlyDevice = userAgent.includes('screenly-viewer')
-
-    if (banner && !isScreenlyDevice) {
-      banner.classList.add('visible')
-      clearInterval(ctaTimer)
-      ctaTimer = setInterval(rotateCta, 5000)
-    }
-
-    generateAnalyticsEvent('device', {
-      app_name: 'Screenly Weather App',
-      screenly_device: isScreenlyDevice
-    })
   }
 
   const init = () => {
@@ -393,7 +319,7 @@ import {
     setTimeFormat(params.get('24h'))
     // fetchWeather() reschedules itself every 2 hours.
     fetchWeather()
-    setBanner()
+    removeScreenlyBranding()
   }
 
   // Only auto-run in a real browser; under a test runner there is no document.

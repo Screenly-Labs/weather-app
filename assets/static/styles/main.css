@@ -6,29 +6,9 @@
    only layers legibility + the reactive accent on top.
    ========================================================================= */
 
-/* ---- Webfonts: self-hosted, vendored from Bun-managed @fontsource --------
-   (see sync-fonts.js). Variable "standard" axis = optical-size + weight. */
-@font-face {
-  font-family: "Fraunces";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/static/fonts/fraunces-latin-standard-normal.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Fraunces";
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/static/fonts/fraunces-latin-standard-italic.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Hanken Grotesk";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/static/fonts/hanken-grotesk-latin-wght-normal.woff2") format("woff2");
-}
+/* Webfonts (@font-face) and the standardized footer badge (.brand) come from
+   @screenly-labs/signage-kit — build.js prepends styles/fonts.css + styles/brand.css
+   before down-leveling. This file keeps the app's own tokens, reset, and styles. */
 
 /* Registered so the weather-reactive accent can interpolate on change. */
 @property --accent {
@@ -103,7 +83,7 @@ body[data-cond="haze"]         { --accent: #e0c79a; }
 body[data-night="true"]        { --accent: #b6a6f2; }
 
 /* =========================================================================
-   Layout shell — grid: masthead / hero+CTA / forecast rail
+   Layout shell — grid: masthead / hero / forecast rail
    ========================================================================= */
 .content {
   position: relative;
@@ -190,7 +170,7 @@ body[data-night="true"]        { --accent: #b6a6f2; }
 }
 
 /* =========================================================================
-   Mid row — hero (current weather) + rotating Screenly CTA
+   Mid row — hero (current weather)
    ========================================================================= */
 .midrow {
   display: flex;
@@ -286,57 +266,6 @@ body[data-night="true"]        { --accent: #b6a6f2; }
   content: "·";
   margin-inline-end: 0.45em;
   opacity: 0.55;
-}
-
-/* ---- Rotating Screenly CTA (shown only on non-Screenly devices) ----------
-   Non-interactive: a digital sign has no cursor/touch, so the screenly.io
-   mark is the destination a viewer reads and types in themselves. */
-.cta-wrap {
-  flex: none;
-  text-align: right;
-}
-
-.upgrade-banner {
-  display: none;
-}
-
-.upgrade-banner.visible {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-}
-
-.cta-msg {
-  font-size: 0.84rem;
-  letter-spacing: 0.015em;
-  color: var(--ink-dim);
-  white-space: nowrap;
-  transition: opacity 0.45s ease, transform 0.45s ease;
-}
-
-.cta-msg.is-out {
-  opacity: 0;
-  transform: translateY(-0.25em);
-}
-
-.cta-lockup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6em;
-}
-
-.cta-logo {
-  block-size: 1.05rem;
-  inline-size: auto;
-  filter: drop-shadow(0 0.05em 0.4em rgb(0 0 0 / 0.45));
-}
-
-.cta-url {
-  font-size: max(12px, 0.66rem);
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  color: var(--ink-dim);
 }
 
 /* =========================================================================
@@ -626,7 +555,7 @@ body[data-cond="thunderstorm"] .weather-fx {
     gap: 0.5rem;
   }
 
-  /* Stack hero + CTA, gravitate to the bottom, both left-aligned. */
+  /* Gravitate the hero to the bottom, left-aligned. */
   .midrow {
     flex-direction: column;
     align-items: flex-start;
@@ -637,15 +566,6 @@ body[data-cond="thunderstorm"] .weather-fx {
   .hero {
     align-self: flex-start;
     max-inline-size: none;
-  }
-
-  .cta-wrap {
-    text-align: left;
-    max-inline-size: none;
-  }
-
-  .upgrade-banner.visible {
-    align-items: flex-start;
   }
 
   #current-temp {
@@ -678,10 +598,6 @@ body[data-cond="thunderstorm"] .weather-fx {
 
   .playing .anim {
     animation: none;
-  }
-
-  .cta-msg {
-    transition: none;
   }
 
   /* Drop the decorative weather FX layer entirely (ambient motion + particles)
