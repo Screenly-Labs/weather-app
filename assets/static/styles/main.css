@@ -692,25 +692,18 @@ body[data-cond="thunderstorm"] .weather-fx {
 }
 
 /* =========================================================================
-   Degraded mode — old/weak signage players (html.legacy set by the inline gate
-   in Layout.jsx). Assume the device can't afford animation; drop it entirely.
-   Mirrors the reduced-motion resting state: .anim has a base opacity:0 and only
-   appears via the entrance animation (which the kill-switch removes), so reveal
-   it; and drop the decorative weather FX layer rather than freezing it.
+   Degraded mode — app-specific resting state for old/weak signage players
+   (html.legacy set by the shared gate from @screenly-labs/signage-kit). The
+   generic animation/transition kill-switch is prepended to this stylesheet by
+   the kit's build (processCss includeDegraded); only the app-specific rules
+   live here. Mirrors the reduced-motion resting state: .anim has a base
+   opacity:0 and only appears via the entrance animation (which the kill-switch
+   removes), so reveal it; and drop the decorative weather FX layer rather than
+   freezing it.
    ========================================================================= */
 html.legacy .anim {
   opacity: 1;
 }
 html.legacy .weather-fx {
   display: none;
-}
-html.legacy *,
-html.legacy *::before,
-html.legacy *::after {
-  /* biome-ignore lint/complexity/noImportantStyles: kill-switch must override the entrance/FX animation rules */
-  animation: none !important;
-  /* biome-ignore lint/complexity/noImportantStyles: kill-switch must override any transition */
-  transition: none !important;
-  /* biome-ignore lint/complexity/noImportantStyles: release GPU layer hints on weak devices */
-  will-change: auto !important;
 }
