@@ -1,6 +1,9 @@
 dist
 node_modules
 worker
+
+# Built client bundle (compiled from assets/static/js/main.src.js by build.js)
+assets/static/js/main.js
 .dev.vars
 .wrangler
 package-lock.json

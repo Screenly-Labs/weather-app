@@ -1,67 +1,56 @@
 #!/usr/bin/env bun
 /* global Bun */
-// Minifies the static JS and CSS assets in place, replacing the gulp build.
+// Builds the served static assets through @screenly-labs/signage-kit (shared
+// support floor + down-leveling recipe). The client JS is bundled to a self-
+// executing classic script and each CSS file is down-leveled + minified in place.
+// The shared degraded-mode kill-switch is prepended to the CSS by the kit
+// (includeDegraded), so it lives in the package, not here.
+//
 // The assets are served directly from ./assets by wrangler's [site] config and
-// referenced at /static/..., so the minified output must overwrite the source.
+// referenced at /static/.... main.js is the bundled artifact (gitignored) built
+// from main.src.js; pass --client to skip the CSS step (used by `bun run dev`,
+// keeping the working-tree CSS unminified for editing). Note: --client also skips
+// the includeDegraded injection, so a `bun run dev` build serves no html.legacy
+// kill-switch — build without --client to exercise degraded mode locally.
 
 import { Glob } from 'bun'
-import browserslist from 'browserslist'
-import { build as esbuild } from 'esbuild'
-import { browserslistToTargets, transform as lightningcss } from 'lightningcss'
+import { bundleJs, processCss } from '@screenly-labs/signage-kit/build'
 import { run as syncFonts } from './sync-fonts.js'
 
-// The `browserslist` field in package.json is the CSS support floor: Lightning
-// CSS down-levels the stylesheet to it. The JS is lowered separately by esbuild to
-// a fixed ES2017 syntax floor (kept at/below the browserslist minimum); esbuild
-// can't read browserslist, so keep the two in sync if you change the floor. See
-// the degraded-mode notes in Layout.jsx / main.css.
-const cssTargets = browserslistToTargets(browserslist())
+const clientOnly = process.argv.includes('--client')
 
-// Vendor the Bun-managed webfonts into ./assets before minifying.
+// Vendor the Bun-managed webfonts into ./assets first.
 await syncFonts()
 
-// main.js is the only JS *entry*. It imports ./locale.js (and the polyfills shim);
-// esbuild inlines those and lowers modern syntax (?., ??, spread) to the ES2017
-// floor so old engines can parse it. format:'iife' keeps the output a self-
-// executing classic script with no `export`/`import` token — loadable by every
-// cached HTML variant so a deploy never strands cached pages. allowOverwrite lets
-// esbuild write back over the entry (assets are served in place by wrangler).
+// ---- Client JS bundle: main.src.js -> main.js (inlining ./locale.js + the
+// shared polyfills shim), a self-contained IIFE at the floor's syntax level with
+// no `export`/`import`, loadable by every cached HTML variant.
 try {
-  await esbuild({
-    entryPoints: ['assets/static/js/main.js'],
-    bundle: true,
-    minify: true,
-    format: 'iife',
-    target: ['es2017'],
-    outfile: 'assets/static/js/main.js',
-    allowOverwrite: true
-  })
+  await bundleJs('assets/static/js/main.src.js', 'assets/static/js/main.js')
 } catch (error) {
   console.error('✗ Failed to build assets/static/js/main.js')
   console.error(error)
   process.exit(1)
 }
-console.log('✓ JS: assets/static/js/main.js (esbuild, iife, es2017)')
+console.log('✓ JS: assets/static/js/main.js')
 
-// CSS: Lightning CSS down-levels each stylesheet to the browserslist floor and
-// minifies in place. url(/static/...) refs are left untouched.
-let count = 1
-for await (const path of new Glob('assets/static/styles/*.css').scan('.')) {
-  try {
-    const { code } = lightningcss({
-      filename: path,
-      code: await Bun.file(path).bytes(),
-      minify: true,
-      targets: cssTargets
-    })
-    await Bun.write(path, code)
-  } catch (error) {
-    console.error(`✗ Failed to build ${path}`)
-    console.error(error)
-    process.exit(1)
+// ---- CSS: down-level + minify in place (skipped for --client), with the shared
+// html.legacy kill-switch prepended by the kit.
+if (!clientOnly) {
+  for await (const path of new Glob('assets/static/styles/*.css').scan('.')) {
+    try {
+      const code = await processCss(await Bun.file(path).text(), {
+        includeDegraded: true,
+        filename: path
+      })
+      await Bun.write(path, code)
+    } catch (error) {
+      console.error(`✗ Failed to build ${path}`)
+      console.error(error)
+      process.exit(1)
+    }
+    console.log(`✓ CSS: ${path}`)
   }
-  console.log(`✓ CSS: ${path}`)
-  count++
 }
 
-console.log(`Build complete — ${count} file(s) built in place.`)
+console.log(`Build complete${clientOnly ? ' (client JS only)' : ''}.`)
