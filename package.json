@@ -10,20 +10,15 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "sync-fonts": "bun run sync-fonts.js",
-    "dev": "wrangler dev",
+    "dev": "bun run build.js --client && wrangler dev",
     "build": "bun run build.js",
-    "deploy": "wrangler deploy --env=dev"
+    "deploy": "bun run build && wrangler deploy --env=dev"
   },
   "license": "AGPL-3.0-only",
-  "browserslist": [
-    "chrome >= 87",
-    "firefox >= 78",
-    "safari >= 14.1",
-    "edge >= 87"
-  ],
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",
     "@fontsource-variable/hanken-grotesk": "^5.2.8",
+    "@screenly-labs/signage-kit": "github:Screenly-Labs/signage-kit#2026.7.0",
     "hono": "^4.12.27"
   },
   "devDependencies": {
