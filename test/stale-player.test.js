@@ -77,6 +77,28 @@ describe('isStalePlayer', () => {
     expect(isStalePlayer(profile(UA.chrome))).toBe(false)
   })
 
+  it('does not resolve old Anthias to raspberry-pi, so platform cannot gate this', () => {
+    // Pins the reason isStalePlayer ignores profile.platform. "Anthias is Pi
+    // first, so require platform raspberry-pi" is the tempting narrowing, and it
+    // would match nothing: the platform only comes from a literal Raspbian token
+    // that the target UA does not send. If this ever starts reporting
+    // 'raspberry-pi', the comment on isStalePlayer needs revisiting.
+    expect(profile(UA.oldAnthias).platform).toBe('linux')
+    // And platform is not a discriminator anyway: the player we exclude reports
+    // exactly the same one.
+    expect(profile(UA.brightsign).platform).toBe('linux')
+  })
+
+  it('stays quiet on a BrightSign that replaced its UA with a custom string', () => {
+    // roHtmlWidget lets an integrator replace the UA, dropping the BrightSign/
+    // token the exclusion leans on. Safe regardless: a hand-written UA carries no
+    // QtWebEngine token either, so it fails on the engine instead of the vendor.
+    const p = profile('AcmeKiosk/1.0')
+    expect(p.vendor).toBeNull()
+    expect(p.engine.name).toBeNull()
+    expect(isStalePlayer(p)).toBe(false)
+  })
+
   it('stays quiet on a non-QtWebEngine player with no vendor', () => {
     // The notice is an accusation; an unrecognised engine gets the benefit of
     // the doubt rather than a guess.

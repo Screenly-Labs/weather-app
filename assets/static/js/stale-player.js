@@ -22,6 +22,24 @@
 // itself the mark of a current build, so an untagged player is out of date
 // whichever Chromium it carries — gating on belowFloor as well would miss a
 // build new enough to have reached Qt6 but still too old to identify itself.
+//
+// And don't reach for `profile.platform` to narrow the bucket. It looks like the
+// obvious way to say "Anthias is Raspberry Pi first", but it is measured, not
+// guessed, and the measurement says no:
+//
+//   * Every QtWebEngine player resolves to platform 'linux', old Anthias and
+//     BrightSign alike, so the field has no separating power here at all.
+//   * 'raspberry-pi' comes only from a literal `Raspbian` token, which the old
+//     Anthias UA does not carry. Requiring it matches NO player, so it would not
+//     tighten the notice, it would silently switch it off. Same shape of mistake
+//     as the `vendor === 'anthias'` trap above.
+//
+// The BrightSign exclusion is also sturdier than it looks. Its roHtmlWidget lets
+// an integrator replace the UA outright, which would drop the `BrightSign/`
+// token this relies on. But a hand-written replacement does not carry a
+// `QtWebEngine` token either, so such a player fails this test on the engine
+// instead of the vendor and still sees nothing. Only a verbatim copy of the
+// stock UA with the product token surgically removed would misfire.
 export const isStalePlayer = (profile) =>
   profile.vendor === null && profile.engine.name === 'qtwebengine'
 
