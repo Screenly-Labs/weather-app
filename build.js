@@ -18,6 +18,8 @@
 import { readFileSync } from 'node:fs'
 import { Glob } from 'bun'
 import { bundleJs, processCss } from '@screenly-labs/signage-kit/build'
+import QRCode from 'qrcode'
+import { QR_SRC, UPGRADE_URL } from './assets/static/js/stale-player.js'
 import { run as syncFonts } from './sync-fonts.js'
 
 const clientOnly = process.argv.includes('--client')
@@ -32,6 +34,32 @@ const sharedCss = ['fonts.css', 'brand.css']
 
 // Vendor the Bun-managed webfonts into ./assets first.
 await syncFonts()
+
+// ---- Stale-player notice QR: generated into ./assets, never committed (it is
+// a build artifact like main.js). Encoded from UPGRADE_URL in stale-player.js —
+// the same module the notice's alt text reads — so the image and the link it
+// claims to be can never drift apart. Built even under --client, because the
+// notice references the file at runtime and `bun run dev` must serve it.
+//
+// Errors at 'M' (~15% recovery): this is scanned off a wall at an angle, in
+// whatever light the room has, so it needs more margin for error than the 'L'
+// default, without the density 'Q'/'H' would add. Rendered dark-on-transparent
+// and given its light backing plate by CSS.
+const qrPath = `assets${QR_SRC}`
+try {
+  const svg = await QRCode.toString(UPGRADE_URL, {
+    type: 'svg',
+    errorCorrectionLevel: 'M',
+    margin: 0,
+    color: { dark: '#2a2118ff', light: '#00000000' }
+  })
+  await Bun.write(qrPath, svg)
+} catch (error) {
+  console.error(`✗ Failed to build ${qrPath}`)
+  console.error(error)
+  process.exit(1)
+}
+console.log(`✓ QR: ${qrPath} (${UPGRADE_URL})`)
 
 // ---- Client JS bundle: main.src.js -> main.js (inlining ./locale.js + the
 // shared polyfills shim), a self-contained IIFE at the floor's syntax level with
