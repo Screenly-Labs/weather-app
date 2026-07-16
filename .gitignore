@@ -4,6 +4,9 @@ worker
 
 # Built client bundle (compiled from assets/static/js/main.src.js by build.js)
 assets/static/js/main.js
+
+# Stale-player QR, encoded by build.js from UPGRADE_URL in stale-player.js
+assets/static/images/anthias-upgrade-qr.svg
 .dev.vars
 .wrangler
 package-lock.json

@@ -3,6 +3,8 @@
 // shim is in place before any render.
 import '@screenly-labs/signage-kit/polyfills'
 import { removeScreenlyBranding } from '@screenly-labs/signage-kit/branding'
+import { detectPlayer } from '@screenly-labs/signage-kit/profiler'
+import { mountStaleNotice } from './stale-player.js'
 import {
   usesFahrenheit,
   unitsCountry,
@@ -335,6 +337,11 @@ import {
     // fetchWeather() reschedules itself every 2 hours.
     fetchWeather()
     removeScreenlyBranding()
+    // Warn old-Anthias viewers that their player is out of date. Client-side on
+    // purpose: the SSR page cache is keyed by asset version + coordinates and
+    // carries no user-agent component, so a server-rendered notice would be
+    // cached and then served to every player regardless of what it is running.
+    mountStaleNotice(detectPlayer(), document, assetVersion)
   }
 
   // Only auto-run in a real browser; under a test runner there is no document.
