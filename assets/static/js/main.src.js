@@ -11,6 +11,7 @@ import {
   setLocaleOverride,
   setTimeFormat,
   descriptionLang,
+  descriptionLocale,
   getTimeByOffset,
   formatTime,
   formatDate,
@@ -175,6 +176,14 @@ import {
   const updateCurrentWeather = (icon, desc, temp) => {
     updateAttribute('current-weather-icon', 'src', withVersion(`${iconsPath}/${icon}.svg`))
     updateContent('current-weather-status', desc)
+    // Tag the description with the language it was translated into, so the CSS
+    // stops title-casing it (English convention, wrong for German) and assistive
+    // tech reads it correctly. Cleared when OWM answered in English, so its
+    // default is never mislabelled as the display locale.
+    const status = document.querySelector('#current-weather-status')
+    const descLocale = descriptionLocale()
+    if (descLocale) status.lang = descLocale
+    else status.removeAttribute('lang')
     updateContent('current-temp', getTemp(temp))
     // The degree sign is a static element; the scale element holds just C/F.
     updateContent('current-temp-scale', tempScale)

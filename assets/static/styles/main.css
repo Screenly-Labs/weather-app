@@ -207,8 +207,24 @@ body[data-night="true"]        { --accent: #b6a6f2; }
   flex: none;
 }
 
+/* OWM sends the description lowercase ("broken clouds"), so title-case it. */
 #current-weather-status {
   text-transform: capitalize;
+}
+
+/* main.js tags the description with its language once it is actually translated.
+   Title case is an English convention: German capitalizes nouns and nothing
+   else, so `capitalize` would render "Gewitter Mit Leichtem Regen" for what OWM
+   correctly sent as "Gewitter mit leichtem Regen". Keep the upstream casing and
+   lift only the first letter, since OWM still sends some of it lowercase
+   ("überwiegend bewölkt" -> "Überwiegend bewölkt"). Untagged text is OWM's
+   English default and keeps the title case above. */
+#current-weather-status[lang] {
+  text-transform: none;
+}
+
+#current-weather-status[lang]::first-letter {
+  text-transform: uppercase;
 }
 
 .temperature {

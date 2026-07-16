@@ -221,6 +221,13 @@ export const owmLang = (tag) => {
 // auto-detected case keeps OWM's English default.
 export const descriptionLang = () => owmLang(localeOverride)
 
+// The BCP-47 tag the description was actually translated into, or '' when it is
+// OWM's English default. This is deliberately NOT the OWM code: 'cz' and 'la'
+// are OWM's own inventions (Czech is really 'cs', Latvian 'lv'), so feeding them
+// to a lang attribute would mislabel the text. Drives the casing rule in the CSS
+// - English title-cases the description, German capitalizes only its nouns.
+export const descriptionLocale = () => (descriptionLang() ? localeOverride : '')
+
 // ISO-3166 region subtag of a BCP-47 tag ('en-US' -> 'US', 'zh-Hant-TW' -> 'TW',
 // 'ha-Latn-NG' -> 'NG'), or '' when the tag carries no region ('ar', 'fr') or is
 // malformed. Uses the built-in Intl.Locale parser rather than a hand-rolled one.

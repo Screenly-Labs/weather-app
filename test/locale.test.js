@@ -15,6 +15,7 @@ import {
   resolveHour12,
   owmLang,
   descriptionLang,
+  descriptionLocale,
   formatTime,
   formatDate,
   getTimeByOffset,
@@ -320,5 +321,35 @@ describe('descriptionLang (fetch-time language)', () => {
   it('ignores an unsupported override, matching the rest of the display', () => {
     setLocaleOverride('zzzzz')
     expect(descriptionLang()).toBe('')
+  })
+})
+
+describe('descriptionLocale (casing / lang tag)', () => {
+  afterEach(() => setLocaleOverride(''))
+
+  it('reports the BCP-47 tag, never OWM\'s invented code', () => {
+    // The lang attribute must be a real language subtag. OWM calls Czech 'cz'
+    // and Latvian 'la'; tagging the DOM with those would mislabel the text.
+    setLocaleOverride('cs-CZ')
+    expect(descriptionLang()).toBe('cz') // what we send upstream
+    expect(descriptionLocale()).toBe('cs-CZ') // what the DOM gets
+    setLocaleOverride('lv-LV')
+    expect(descriptionLang()).toBe('la')
+    expect(descriptionLocale()).toBe('lv-LV')
+  })
+
+  it('tags a translated description', () => {
+    setLocaleOverride('de-DE')
+    expect(descriptionLocale()).toBe('de-DE')
+  })
+
+  it('leaves an English description untagged, so it keeps title case', () => {
+    // Auto-detect and non-Latin scripts both keep OWM's English default; marking
+    // those as de-DE/ru-RU would be a lie and would drop the title casing.
+    setLocaleOverride('')
+    setLocale('DE')
+    expect(descriptionLocale()).toBe('')
+    setLocaleOverride('ru-RU')
+    expect(descriptionLocale()).toBe('')
   })
 })
