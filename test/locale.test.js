@@ -13,6 +13,8 @@ import {
   setLocaleOverride,
   setTimeFormat,
   resolveHour12,
+  owmLang,
+  descriptionLang,
   formatTime,
   formatDate,
   getTimeByOffset,
@@ -257,5 +259,66 @@ describe('getCondCategory (weather-reactive accent)', () => {
     expect(getCondCategory(741)).toBe('haze')
     expect(getCondCategory(800)).toBe('clear')
     expect(getCondCategory(802)).toBe('clouds')
+  })
+})
+
+describe('owmLang (weather-description language)', () => {
+  it('maps a locale to its OpenWeatherMap language code', () => {
+    expect(owmLang('de-DE')).toBe('de') // the reported bug: German description
+    expect(owmLang('fr-FR')).toBe('fr')
+    expect(owmLang('en-GB')).toBe('en')
+    expect(owmLang('de')).toBe('de') // region-less tags still resolve
+  })
+
+  it("uses OWM's non-standard codes where they differ from ISO-639-1", () => {
+    expect(owmLang('cs-CZ')).toBe('cz')
+    expect(owmLang('lv-LV')).toBe('la')
+    // Albanian is 'sq' in OWM's table too, so it must NOT be rewritten to 'al'.
+    expect(owmLang('sq-AL')).toBe('sq')
+    // CLDR maximizes NO to nb-NO, but OWM only documents plain 'no'.
+    expect(owmLang('nb-NO')).toBe('no')
+    expect(owmLang('no')).toBe('no')
+  })
+
+  it('distinguishes the region-specific variants OWM translates separately', () => {
+    expect(owmLang('pt-BR')).toBe('pt_br')
+    expect(owmLang('pt-PT')).toBe('pt')
+  })
+
+  it('keeps non-Latin scripts English, since the vendored fonts are latin-only', () => {
+    expect(owmLang('ru-RU')).toBe('') // Cyrillic
+    expect(owmLang('ja-JP')).toBe('') // CJK
+    expect(owmLang('zh-CN')).toBe('')
+    expect(owmLang('ar-SA')).toBe('') // RTL
+    expect(owmLang('el-GR')).toBe('') // Greek
+  })
+
+  it('falls back to English for missing or malformed tags', () => {
+    expect(owmLang('')).toBe('')
+    expect(owmLang(undefined)).toBe('')
+    expect(owmLang('zzzzz')).toBe('')
+    expect(owmLang('not a tag')).toBe('')
+  })
+})
+
+describe('descriptionLang (fetch-time language)', () => {
+  afterEach(() => setLocaleOverride(''))
+
+  it('translates the description for a ?locale override', () => {
+    setLocaleOverride('de-DE')
+    expect(descriptionLang()).toBe('de')
+  })
+
+  it('leaves the description English when the locale is auto-detected', () => {
+    // Without an override the locale is only known once the country arrives in
+    // the response body, which is after the description has been fetched.
+    setLocaleOverride('')
+    setLocale('DE')
+    expect(descriptionLang()).toBe('')
+  })
+
+  it('ignores an unsupported override, matching the rest of the display', () => {
+    setLocaleOverride('zzzzz')
+    expect(descriptionLang()).toBe('')
   })
 })

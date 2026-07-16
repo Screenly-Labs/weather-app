@@ -173,6 +173,54 @@ export const setLocaleOverride = (value) => {
 
 export const setLocale = (code) => applyLocale(localeOverride || resolveLocale(code))
 
+// OpenWeatherMap's `lang` codes are mostly the ISO-639-1 subtag, but a few
+// predate it and disagree. Only the codes owmLang can actually emit are listed,
+// i.e. Latin-script ones; OWM's non-Latin oddities (kr, ua, zh_cn, zh_tw) are
+// deliberately absent because the script guard below never lets them through.
+// An unlisted language passes through as its bare subtag, which OWM either
+// translates or quietly answers in English - the same as sending nothing.
+//   cs -> cz  OWM predates the ISO code for Czech.
+//   lv -> la  'la' is really Latin, but OWM uses it for Latvian.
+//   nb -> no  CLDR maximizes NO to nb-NO (Bokmal); OWM only knows plain 'no'.
+const OWM_LANG = { cs: 'cz', lv: 'la', nb: 'no', nn: 'no' }
+// Languages OWM translates per-region rather than per-language.
+const OWM_LANG_BY_TAG = { 'pt-BR': 'pt_br' }
+
+// True when a locale renders in the Latin alphabet, per CLDR likely-subtags
+// rather than a hand-listed set of languages.
+const isLatinScript = (tag) => {
+  try {
+    return new Intl.Locale(tag).maximize().script === 'Latn'
+  } catch {
+    return false
+  }
+}
+
+// OWM `lang` code for the weather description, or '' to leave it in English.
+// The description is the one string we cannot format ourselves, so it has to be
+// requested in the right language upstream (see the weather route).
+//
+// Non-Latin-script locales deliberately stay English: the vendored fonts ship
+// latin subsets only (see build.js), so a Cyrillic/CJK/Arabic description would
+// render as tofu on a live screen. This is the same reasoning as LOCALE_OVERRIDES
+// above, applied to the one field that comes from upstream instead of from Intl.
+export const owmLang = (tag) => {
+  if (!tag || !isLatinScript(tag)) return ''
+  try {
+    const { language, region } = new Intl.Locale(tag)
+    return OWM_LANG_BY_TAG[`${language}-${region}`] || OWM_LANG[language] || language
+  } catch {
+    return ''
+  }
+}
+
+// The OWM `lang` for the *current* display locale, i.e. what the description
+// should be translated into. Only a ?locale override is known early enough to
+// influence the fetch; without one the locale is derived from the country in the
+// response body, by which point the description has already been fetched, so the
+// auto-detected case keeps OWM's English default.
+export const descriptionLang = () => owmLang(localeOverride)
+
 // ISO-3166 region subtag of a BCP-47 tag ('en-US' -> 'US', 'zh-Hant-TW' -> 'TW',
 // 'ha-Latn-NG' -> 'NG'), or '' when the tag carries no region ('ar', 'fr') or is
 // malformed. Uses the built-in Intl.Locale parser rather than a hand-rolled one.

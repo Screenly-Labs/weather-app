@@ -10,6 +10,7 @@ import {
   setLocale,
   setLocaleOverride,
   setTimeFormat,
+  descriptionLang,
   getTimeByOffset,
   formatTime,
   formatDate,
@@ -298,7 +299,12 @@ import {
     clearTimeout(refreshTimer)
     try {
       const { lat, lng } = getLocation()
-      const response = await fetch(`/api/weather?lat=${lat}&lng=${lng}`)
+      const params = new URLSearchParams({ lat, lng })
+      // Ask upstream for the description in the display language; omitted when
+      // there is no ?locale override, or for scripts the fonts cannot render.
+      const lang = descriptionLang()
+      if (lang) params.set('lang', lang)
+      const response = await fetch(`/api/weather?${params.toString()}`)
       const data = await response.json()
       updateData(data)
     } catch (e) {
