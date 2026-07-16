@@ -89,10 +89,13 @@ describe('isStalePlayer', () => {
     expect(profile(UA.brightsign).platform).toBe('linux')
   })
 
-  it('stays quiet on a BrightSign that replaced its UA with a custom string', () => {
-    // roHtmlWidget lets an integrator replace the UA, dropping the BrightSign/
-    // token the exclusion leans on. Safe regardless: a hand-written UA carries no
-    // QtWebEngine token either, so it fails on the engine instead of the vendor.
+  it('stays quiet on a custom UA that names no engine', () => {
+    // Why this case is here: roHtmlWidget lets a BrightSign integrator replace
+    // the UA and drop the `BrightSign/` token the exclusion leans on. Nothing
+    // then identifies the device as BrightSign, which is exactly the point of
+    // the fixture below being an arbitrary custom string rather than anything
+    // BrightSign-shaped: it is what such a player looks like from here. It fails
+    // this test on the engine instead of the vendor, so it still sees nothing.
     const p = profile('AcmeKiosk/1.0')
     expect(p.vendor).toBeNull()
     expect(p.engine.name).toBeNull()
