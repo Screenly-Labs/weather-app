@@ -62,6 +62,15 @@ Therefore all unit-testable pure helpers (locale resolution, temp conversion, ti
 
 `build.js` minifies JS/CSS **in place**, overwriting the source files in `assets/`. It also vendors webfonts from `@fontsource` packages into `assets/static/fonts/` (no CDN). Don't run `bun run build` and commit the minified output as if it were source.
 
+### `bun run dev` does not render what production renders
+
+`bun run dev` runs `build.js --client`, which skips the CSS step. That step is what prepends signage-kit's `styles/fonts.css` + `styles/brand.css` into `main.css` (a raw-CSS Worker can't resolve a bare `@import`). `main.css` therefore carries **no `@font-face` and no `.brand` rules of its own** in source, and the dev server serves it that way. Two consequences, both of which look like app bugs:
+
+- **No webfonts load.** Everything falls back to system fonts, so text metrics (and therefore wrapping, line counts and overflow) are wrong.
+- **`.brand` is unstyled.** It should be a `position: fixed` ~116px footer badge; unstyled it is a ~1650px block that stretches the `.content` grid column, dragging `.midrow` and `#weather-item-list` past the viewport where `overflow: hidden` silently clips them. In portrait this hides a forecast item entirely.
+
+So don't trust `bun run dev` for anything visual, and never conclude a layout bug from it. To check rendering for real, either screenshot production (`weather.srly.io`), or run a full `bun run build`, verify, then `git checkout -- assets/` to undo the in-place minification (see above). When measuring layout in a headless browser, assert `document.fonts.check('1rem "Hanken Grotesk"')` first, and check clipping on `.content` (it has `overflow: hidden`, so a too-wide child is cut rather than scrolling `documentElement`).
+
 ## Conventions
 
 - **Biome** is the linter+formatter (config in `biome.json`): single quotes, no semicolons, no trailing commas, 2-space indent, 100-col width. `bun run lint` fails on warnings.

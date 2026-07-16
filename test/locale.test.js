@@ -13,6 +13,9 @@ import {
   setLocaleOverride,
   setTimeFormat,
   resolveHour12,
+  owmLang,
+  descriptionLang,
+  descriptionLocale,
   formatTime,
   formatDate,
   getTimeByOffset,
@@ -257,5 +260,129 @@ describe('getCondCategory (weather-reactive accent)', () => {
     expect(getCondCategory(741)).toBe('haze')
     expect(getCondCategory(800)).toBe('clear')
     expect(getCondCategory(802)).toBe('clouds')
+  })
+})
+
+describe('owmLang (weather-description language)', () => {
+  it('maps a locale to its OpenWeatherMap language code', () => {
+    expect(owmLang('de-DE')).toBe('de') // the reported bug: German description
+    expect(owmLang('fr-FR')).toBe('fr')
+    expect(owmLang('de')).toBe('de') // region-less tags still resolve
+    // en-GB deliberately yields '' - see the dedicated English case below.
+  })
+
+  it("uses OWM's non-standard codes where they differ from ISO-639-1", () => {
+    expect(owmLang('cs-CZ')).toBe('cz')
+    expect(owmLang('lv-LV')).toBe('la')
+    // Albanian is 'sq' in OWM's table too, so it must NOT be rewritten to 'al'.
+    expect(owmLang('sq-AL')).toBe('sq')
+    // CLDR maximizes NO to nb-NO, but OWM only documents plain 'no'.
+    expect(owmLang('nb-NO')).toBe('no')
+    expect(owmLang('no')).toBe('no')
+  })
+
+  it('distinguishes the region-specific variants OWM translates separately', () => {
+    expect(owmLang('pt-BR')).toBe('pt_br')
+    expect(owmLang('pt-PT')).toBe('pt')
+  })
+
+  it('keeps non-Latin scripts English, since the vendored fonts are latin-only', () => {
+    expect(owmLang('ru-RU')).toBe('') // Cyrillic
+    expect(owmLang('ja-JP')).toBe('') // CJK
+    expect(owmLang('zh-CN')).toBe('')
+    expect(owmLang('ar-SA')).toBe('') // RTL
+    expect(owmLang('el-GR')).toBe('') // Greek
+  })
+
+  it('falls back to English for missing or malformed tags', () => {
+    expect(owmLang('')).toBe('')
+    expect(owmLang(undefined)).toBe('')
+    expect(owmLang('zzzzz')).toBe('')
+    expect(owmLang('not a tag')).toBe('')
+  })
+
+  it('stays English for Latin-script languages OWM does not translate', () => {
+    // OWM answers an unknown code with English rather than erroring, so emitting
+    // one would leave the UI tagging English text as this language (and dropping
+    // its title case). Only codes OWM documents may be requested.
+    expect(owmLang('et-EE')).toBe('') // Estonian: 2 letters, passes the route's
+    //                                   shape check, but OWM has no Estonian.
+    expect(owmLang('fil-PH')).toBe('') // 3-letter subtag the route would drop
+    expect(owmLang('haw-US')).toBe('')
+    expect(owmLang('ceb-PH')).toBe('')
+  })
+
+  it('does not request English, since that is already OWM\'s default', () => {
+    // Requesting lang=en is a no-op upstream, and tagging the result would strip
+    // the title case that the auto-detected English path keeps.
+    expect(owmLang('en-GB')).toBe('')
+    expect(owmLang('en-US')).toBe('')
+  })
+
+  it('emits only codes the weather route will forward', () => {
+    // Mirror of the shape check in src/routes/weather.js: anything owmLang emits
+    // must survive it, or the client would tag text the server left untranslated.
+    const routeShape = /^[a-z]{2}(_[a-z]{2})?$/
+    const tags = [
+      'de-DE', 'fr-FR', 'pt-BR', 'pt-PT', 'cs-CZ', 'lv-LV', 'nb-NO', 'sq-AL',
+      'is-IS', 'az-AZ', 'ku-TR', 'sv-SE', 'es-ES', 'id-ID', 'zu-ZA', 'vi-VN'
+    ]
+    for (const tag of tags) {
+      const code = owmLang(tag)
+      expect(code).not.toBe('')
+      expect(routeShape.test(code)).toBe(true)
+    }
+  })
+})
+
+describe('descriptionLang (fetch-time language)', () => {
+  afterEach(() => setLocaleOverride(''))
+
+  it('translates the description for a ?locale override', () => {
+    setLocaleOverride('de-DE')
+    expect(descriptionLang()).toBe('de')
+  })
+
+  it('leaves the description English when the locale is auto-detected', () => {
+    // Without an override the locale is only known once the country arrives in
+    // the response body, which is after the description has been fetched.
+    setLocaleOverride('')
+    setLocale('DE')
+    expect(descriptionLang()).toBe('')
+  })
+
+  it('ignores an unsupported override, matching the rest of the display', () => {
+    setLocaleOverride('zzzzz')
+    expect(descriptionLang()).toBe('')
+  })
+})
+
+describe('descriptionLocale (casing / lang tag)', () => {
+  afterEach(() => setLocaleOverride(''))
+
+  it('reports the BCP-47 tag, never OWM\'s invented code', () => {
+    // The lang attribute must be a real language subtag. OWM calls Czech 'cz'
+    // and Latvian 'la'; tagging the DOM with those would mislabel the text.
+    setLocaleOverride('cs-CZ')
+    expect(descriptionLang()).toBe('cz') // what we send upstream
+    expect(descriptionLocale()).toBe('cs-CZ') // what the DOM gets
+    setLocaleOverride('lv-LV')
+    expect(descriptionLang()).toBe('la')
+    expect(descriptionLocale()).toBe('lv-LV')
+  })
+
+  it('tags a translated description', () => {
+    setLocaleOverride('de-DE')
+    expect(descriptionLocale()).toBe('de-DE')
+  })
+
+  it('leaves an English description untagged, so it keeps title case', () => {
+    // Auto-detect and non-Latin scripts both keep OWM's English default; marking
+    // those as de-DE/ru-RU would be a lie and would drop the title casing.
+    setLocaleOverride('')
+    setLocale('DE')
+    expect(descriptionLocale()).toBe('')
+    setLocaleOverride('ru-RU')
+    expect(descriptionLocale()).toBe('')
   })
 })

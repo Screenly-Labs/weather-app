@@ -45,6 +45,38 @@ describe('Weather route', () => {
     expect(url.searchParams.get('units')).toBe('metric')
   })
 
+  it('forwards a well-formed lang so the description is translated upstream', async () => {
+    let capturedUrl
+    globalThis.fetch = async (url) => {
+      capturedUrl = url
+      return json({})
+    }
+
+    await call('http://localhost/?lat=51.44&lng=7.08&lang=de')
+    expect(new URL(capturedUrl).searchParams.get('lang')).toBe('de')
+
+    // OWM's region-specific codes carry an underscore.
+    await call('http://localhost/?lat=51.44&lng=7.08&lang=pt_br')
+    expect(new URL(capturedUrl).searchParams.get('lang')).toBe('pt_br')
+  })
+
+  it('omits lang when absent or malformed, leaving the description English', async () => {
+    let capturedUrl
+    globalThis.fetch = async (url) => {
+      capturedUrl = url
+      return json({})
+    }
+
+    await call('http://localhost/?lat=51.44&lng=7.08')
+    expect(new URL(capturedUrl).searchParams.has('lang')).toBe(false)
+
+    // Junk must not reach upstream or fan out the cache key.
+    for (const junk of ['DE', 'de-DE', 'x'.repeat(50), '../evil', '']) {
+      await call(`http://localhost/?lat=51.44&lng=7.08&lang=${encodeURIComponent(junk)}`)
+      expect(new URL(capturedUrl).searchParams.has('lang')).toBe(false)
+    }
+  })
+
   it('returns 502 when the upstream responds with a non-OK status', async () => {
     globalThis.fetch = async () => json({ cod: 401, message: 'Invalid API key.' }, 401)
 
