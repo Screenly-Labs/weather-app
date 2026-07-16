@@ -173,6 +173,82 @@ export const setLocaleOverride = (value) => {
 
 export const setLocale = (code) => applyLocale(localeOverride || resolveLocale(code))
 
+// BCP-47 language subtag -> OpenWeatherMap `lang` code, for the languages OWM
+// documents that also render in Latin script. Anything absent stays English.
+//
+// This is an explicit allowlist, NOT "pass the subtag through and let OWM cope",
+// because the returned text gets tagged with the language we believe it is in
+// (see descriptionLocale). OWM answers an unknown code with English instead of
+// erroring, so passing one through would leave us labelling English text as
+// Estonian and stripping its title case. Only a language OWM actually
+// translates may be requested, and only then is the result tagged.
+//
+// Most map to themselves; the exceptions are OWM's own inventions:
+//   cs -> cz     OWM predates the ISO code for Czech.
+//   lv -> la     'la' is really Latin, but OWM uses it for Latvian.
+//   nb/nn -> no  CLDR maximizes NO to nb-NO (Bokmal); OWM only knows plain 'no'.
+// Deliberately absent:
+//   en           OWM's own default, so requesting it is a no-op. Leaving it out
+//                keeps English untagged and title-cased, exactly as it renders
+//                on the auto-detected path.
+//   sr, and the Cyrillic/CJK/RTL codes (kr, ua, ru, zh_cn, ...)
+//                OWM translates Serbian into Cyrillic, which the Latin-only
+//                fonts cannot render even when the *locale* is sr-Latn. The
+//                rest never survive the script guard below anyway.
+// Adding a language OWM later supports is additive; until then it stays English.
+const OWM_LANG = {
+  af: 'af', az: 'az', ca: 'ca', cs: 'cz', da: 'da', de: 'de', es: 'es', eu: 'eu',
+  fi: 'fi', fr: 'fr', gl: 'gl', hr: 'hr', hu: 'hu', id: 'id', is: 'is', it: 'it',
+  ku: 'ku', lt: 'lt', lv: 'la', nb: 'no', nl: 'nl', nn: 'no', no: 'no', pl: 'pl',
+  pt: 'pt', ro: 'ro', sk: 'sk', sl: 'sl', sq: 'sq', sv: 'sv', tr: 'tr', vi: 'vi',
+  zu: 'zu'
+}
+// Languages OWM translates per-region rather than per-language.
+const OWM_LANG_BY_TAG = { 'pt-BR': 'pt_br' }
+
+// True when a locale renders in the Latin alphabet, per CLDR likely-subtags
+// rather than a hand-listed set of languages.
+const isLatinScript = (tag) => {
+  try {
+    return new Intl.Locale(tag).maximize().script === 'Latn'
+  } catch {
+    return false
+  }
+}
+
+// OWM `lang` code for the weather description, or '' to leave it in English.
+// The description is the one string we cannot format ourselves, so it has to be
+// requested in the right language upstream (see the weather route).
+//
+// Non-Latin-script locales deliberately stay English: the vendored fonts ship
+// latin subsets only (see build.js), so a Cyrillic/CJK/Arabic description would
+// render as tofu on a live screen. This is the same reasoning as LOCALE_OVERRIDES
+// above, applied to the one field that comes from upstream instead of from Intl.
+export const owmLang = (tag) => {
+  if (!tag || !isLatinScript(tag)) return ''
+  try {
+    const { language, region } = new Intl.Locale(tag)
+    // Falls back to '' (English), never to the bare subtag: see OWM_LANG.
+    return OWM_LANG_BY_TAG[`${language}-${region}`] || OWM_LANG[language] || ''
+  } catch {
+    return ''
+  }
+}
+
+// The OWM `lang` for the *current* display locale, i.e. what the description
+// should be translated into. Only a ?locale override is known early enough to
+// influence the fetch; without one the locale is derived from the country in the
+// response body, by which point the description has already been fetched, so the
+// auto-detected case keeps OWM's English default.
+export const descriptionLang = () => owmLang(localeOverride)
+
+// The BCP-47 tag the description was actually translated into, or '' when it is
+// OWM's English default. This is deliberately NOT the OWM code: 'cz' and 'la'
+// are OWM's own inventions (Czech is really 'cs', Latvian 'lv'), so feeding them
+// to a lang attribute would mislabel the text. Drives the casing rule in the CSS
+// - English title-cases the description, German capitalizes only its nouns.
+export const descriptionLocale = () => (descriptionLang() ? localeOverride : '')
+
 // ISO-3166 region subtag of a BCP-47 tag ('en-US' -> 'US', 'zh-Hant-TW' -> 'TW',
 // 'ha-Latn-NG' -> 'NG'), or '' when the tag carries no region ('ar', 'fr') or is
 // malformed. Uses the built-in Intl.Locale parser rather than a hand-rolled one.

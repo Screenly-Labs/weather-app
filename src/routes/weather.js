@@ -7,7 +7,7 @@ const UPSTREAM_TIMEOUT_MS = 10000
 
 weather.get('/', async (c) => {
   try {
-    const { lat = defaultLocation.lat, lng = defaultLocation.lng } = c.req.query()
+    const { lat = defaultLocation.lat, lng = defaultLocation.lng, lang } = c.req.query()
     const params = new URLSearchParams({
       lat,
       lon: lng,
@@ -15,6 +15,12 @@ weather.get('/', async (c) => {
       cnt: '10',
       appid: c.env.OPEN_WEATHER_API_KEY
     })
+    // Translate the weather description upstream; the client derives the code
+    // from its display locale (see owmLang in locale.js) and omits it to keep
+    // OWM's English default. Shape-checked rather than matched against OWM's
+    // language list: an unknown-but-well-formed code just yields English, and
+    // hardcoding the list here would leave it to rot on their next addition.
+    if (lang && /^[a-z]{2}(_[a-z]{2})?$/.test(lang)) params.set('lang', lang)
     const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?${params.toString()}`
 
     const timeoutMs = Number(c.env.WEATHER_TIMEOUT_MS) || UPSTREAM_TIMEOUT_MS
