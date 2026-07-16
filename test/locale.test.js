@@ -267,8 +267,8 @@ describe('owmLang (weather-description language)', () => {
   it('maps a locale to its OpenWeatherMap language code', () => {
     expect(owmLang('de-DE')).toBe('de') // the reported bug: German description
     expect(owmLang('fr-FR')).toBe('fr')
-    expect(owmLang('en-GB')).toBe('en')
     expect(owmLang('de')).toBe('de') // region-less tags still resolve
+    // en-GB deliberately yields '' - see the dedicated English case below.
   })
 
   it("uses OWM's non-standard codes where they differ from ISO-639-1", () => {
@@ -299,6 +299,39 @@ describe('owmLang (weather-description language)', () => {
     expect(owmLang(undefined)).toBe('')
     expect(owmLang('zzzzz')).toBe('')
     expect(owmLang('not a tag')).toBe('')
+  })
+
+  it('stays English for Latin-script languages OWM does not translate', () => {
+    // OWM answers an unknown code with English rather than erroring, so emitting
+    // one would leave the UI tagging English text as this language (and dropping
+    // its title case). Only codes OWM documents may be requested.
+    expect(owmLang('et-EE')).toBe('') // Estonian: 2 letters, passes the route's
+    //                                   shape check, but OWM has no Estonian.
+    expect(owmLang('fil-PH')).toBe('') // 3-letter subtag the route would drop
+    expect(owmLang('haw-US')).toBe('')
+    expect(owmLang('ceb-PH')).toBe('')
+  })
+
+  it('does not request English, since that is already OWM\'s default', () => {
+    // Requesting lang=en is a no-op upstream, and tagging the result would strip
+    // the title case that the auto-detected English path keeps.
+    expect(owmLang('en-GB')).toBe('')
+    expect(owmLang('en-US')).toBe('')
+  })
+
+  it('emits only codes the weather route will forward', () => {
+    // Mirror of the shape check in src/routes/weather.js: anything owmLang emits
+    // must survive it, or the client would tag text the server left untranslated.
+    const routeShape = /^[a-z]{2}(_[a-z]{2})?$/
+    const tags = [
+      'de-DE', 'fr-FR', 'pt-BR', 'pt-PT', 'cs-CZ', 'lv-LV', 'nb-NO', 'sq-AL',
+      'is-IS', 'az-AZ', 'ku-TR', 'sv-SE', 'es-ES', 'id-ID', 'zu-ZA', 'vi-VN'
+    ]
+    for (const tag of tags) {
+      const code = owmLang(tag)
+      expect(code).not.toBe('')
+      expect(routeShape.test(code)).toBe(true)
+    }
   })
 })
 

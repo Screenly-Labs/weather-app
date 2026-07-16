@@ -173,16 +173,36 @@ export const setLocaleOverride = (value) => {
 
 export const setLocale = (code) => applyLocale(localeOverride || resolveLocale(code))
 
-// OpenWeatherMap's `lang` codes are mostly the ISO-639-1 subtag, but a few
-// predate it and disagree. Only the codes owmLang can actually emit are listed,
-// i.e. Latin-script ones; OWM's non-Latin oddities (kr, ua, zh_cn, zh_tw) are
-// deliberately absent because the script guard below never lets them through.
-// An unlisted language passes through as its bare subtag, which OWM either
-// translates or quietly answers in English - the same as sending nothing.
-//   cs -> cz  OWM predates the ISO code for Czech.
-//   lv -> la  'la' is really Latin, but OWM uses it for Latvian.
-//   nb -> no  CLDR maximizes NO to nb-NO (Bokmal); OWM only knows plain 'no'.
-const OWM_LANG = { cs: 'cz', lv: 'la', nb: 'no', nn: 'no' }
+// BCP-47 language subtag -> OpenWeatherMap `lang` code, for the languages OWM
+// documents that also render in Latin script. Anything absent stays English.
+//
+// This is an explicit allowlist, NOT "pass the subtag through and let OWM cope",
+// because the returned text gets tagged with the language we believe it is in
+// (see descriptionLocale). OWM answers an unknown code with English instead of
+// erroring, so passing one through would leave us labelling English text as
+// Estonian and stripping its title case. Only a language OWM actually
+// translates may be requested, and only then is the result tagged.
+//
+// Most map to themselves; the exceptions are OWM's own inventions:
+//   cs -> cz     OWM predates the ISO code for Czech.
+//   lv -> la     'la' is really Latin, but OWM uses it for Latvian.
+//   nb/nn -> no  CLDR maximizes NO to nb-NO (Bokmal); OWM only knows plain 'no'.
+// Deliberately absent:
+//   en           OWM's own default, so requesting it is a no-op. Leaving it out
+//                keeps English untagged and title-cased, exactly as it renders
+//                on the auto-detected path.
+//   sr, and the Cyrillic/CJK/RTL codes (kr, ua, ru, zh_cn, ...)
+//                OWM translates Serbian into Cyrillic, which the Latin-only
+//                fonts cannot render even when the *locale* is sr-Latn. The
+//                rest never survive the script guard below anyway.
+// Adding a language OWM later supports is additive; until then it stays English.
+const OWM_LANG = {
+  af: 'af', az: 'az', ca: 'ca', cs: 'cz', da: 'da', de: 'de', es: 'es', eu: 'eu',
+  fi: 'fi', fr: 'fr', gl: 'gl', hr: 'hr', hu: 'hu', id: 'id', is: 'is', it: 'it',
+  ku: 'ku', lt: 'lt', lv: 'la', nb: 'no', nl: 'nl', nn: 'no', no: 'no', pl: 'pl',
+  pt: 'pt', ro: 'ro', sk: 'sk', sl: 'sl', sq: 'sq', sv: 'sv', tr: 'tr', vi: 'vi',
+  zu: 'zu'
+}
 // Languages OWM translates per-region rather than per-language.
 const OWM_LANG_BY_TAG = { 'pt-BR': 'pt_br' }
 
@@ -208,7 +228,8 @@ export const owmLang = (tag) => {
   if (!tag || !isLatinScript(tag)) return ''
   try {
     const { language, region } = new Intl.Locale(tag)
-    return OWM_LANG_BY_TAG[`${language}-${region}`] || OWM_LANG[language] || language
+    // Falls back to '' (English), never to the bare subtag: see OWM_LANG.
+    return OWM_LANG_BY_TAG[`${language}-${region}`] || OWM_LANG[language] || ''
   } catch {
     return ''
   }
