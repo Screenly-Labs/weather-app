@@ -54,9 +54,13 @@ export const createStaleNotice = (doc, v) => {
   const el = doc.createElement('aside')
   el.className = 'stale-notice'
   el.id = 'stale-notice'
-  // Not aria-live: on unattended signage there is no user to announce to, and
-  // the notice is present from first paint rather than arriving as an update.
-  el.setAttribute('role', 'status')
+  // `note`, deliberately not `status`: status is an implicit aria-live="polite"
+  // region, and there is nothing here to announce. The notice is present from
+  // first paint rather than arriving as an update, so a live region would only
+  // interrupt to read out content already sitting on the page. `note` also
+  // overrides the `complementary` landmark <aside> would otherwise carry, which
+  // overstates a corner tag as a page-level region.
+  el.setAttribute('role', 'note')
 
   const text = doc.createElement('p')
   text.className = 'stale-notice-text'

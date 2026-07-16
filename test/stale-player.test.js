@@ -2,7 +2,11 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { describe, expect, it } from 'bun:test'
 
 // The notice builds real DOM, so this suite needs a document — Bun's runner has
-// no globals of its own. Registered before the module under test is imported.
+// no globals of its own. This runs after the static imports below are evaluated
+// (ESM hoists them), not before; what it has to beat is the first *test*, which
+// it does. That ordering is only safe because stale-player.js touches no DOM at
+// import time — it just defines functions and takes `doc` as an argument. Keep
+// it that way, or this needs a dynamic import instead.
 GlobalRegistrator.register()
 
 import { detectPlayer } from '@screenly-labs/signage-kit/profiler'
@@ -106,6 +110,15 @@ describe('createStaleNotice', () => {
     const src = createStaleNotice(document, '').querySelector('.stale-notice-qr').src
     expect(src).toContain('/static/images/anthias-upgrade-qr.svg')
     expect(src).not.toContain('?v=')
+  })
+
+  it('is not a live region — there is nothing to announce', () => {
+    // `status` would be an implicit aria-live="polite", which would interrupt to
+    // read out copy that has been on the page since first paint. Guards against
+    // that creeping back in.
+    const el = createStaleNotice(document, 'v')
+    expect(el.getAttribute('role')).toBe('note')
+    expect(el.hasAttribute('aria-live')).toBe(false)
   })
 
   it('speaks in the player’s own voice', () => {
