@@ -111,6 +111,49 @@ describe('Routing', () => {
   })
 })
 
+describe('Player profile (/api/player)', () => {
+  // The Worker exists in this path for one reason: it sees headers the page cannot.
+  const YODECK_UA =
+    'Mozilla/5.0 (Linux; Android 9; AFTKA Build/x) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36'
+
+  it('names an Android WebView vendor from X-Requested-With, which page JS cannot read', async () => {
+    const res = await app.request('http://localhost/api/player', {
+      headers: { 'user-agent': YODECK_UA, 'x-requested-with': 'com.example.yodeck_fireos' }
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toContain('application/json')
+    expect((await res.json()).vendor).toBe('yodeck')
+  })
+
+  it('cannot name that vendor without the header, which is why the route exists', async () => {
+    const res = await app.request('http://localhost/api/player', {
+      headers: { 'user-agent': YODECK_UA }
+    })
+
+    expect((await res.json()).vendor).toBeNull()
+  })
+
+  it('is served no-store, or every screen inherits the first screen profile', async () => {
+    const res = await app.request('http://localhost/api/player', {
+      headers: { 'user-agent': YODECK_UA }
+    })
+
+    // This is the load-bearing assertion. The SSR page cache has no user-agent
+    // component, so if this response were ever cached the census would collapse onto
+    // whichever player happened to warm it.
+    expect(res.headers.get('Cache-Control')).toContain('no-store')
+  })
+
+  it('records that the header contributed, so a report can trust the attribution', async () => {
+    const res = await app.request('http://localhost/api/player', {
+      headers: { 'user-agent': YODECK_UA, 'x-requested-with': 'com.example.yodeck_fireos' }
+    })
+
+    expect((await res.json()).sources).toContain('requestedWith')
+  })
+})
+
 describe('Page caching (/ route)', () => {
   it('renders on a cache miss, caching under a real Request key with the edge Cache-Control', async () => {
     const keys = []
