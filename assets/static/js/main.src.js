@@ -3,6 +3,8 @@
 // shim is in place before any render.
 import '@screenly-labs/signage-kit/polyfills'
 import { removeScreenlyBranding } from '@screenly-labs/signage-kit/branding'
+import { trackPlayer } from '@screenly-labs/signage-kit/analytics'
+import { PLAYER_PROFILE_PATH } from '@screenly-labs/signage-kit/analytics-server'
 import { detectPlayer } from '@screenly-labs/signage-kit/profiler'
 import { mountStaleNotice } from './stale-player.js'
 import {
@@ -342,6 +344,37 @@ import {
     // carries no user-agent component, so a server-rendered notice would be
     // cached and then served to every player regardless of what it is running.
     mountStaleNotice(detectPlayer(), document, assetVersion)
+    reportPlayer()
+  }
+
+  // Report which player is showing this, and how the screen is configured.
+  //
+  // Prefers the Worker's profile over the one the browser can build. Only a request
+  // carries X-Requested-With, and for the Android WebView players (yodeck, pisignage,
+  // xogo, iadea and friends) that header is the only thing that names the vendor: their
+  // user agents say nothing but "Android Webview". The endpoint is no-store, so unlike
+  // the SSR HTML it describes THIS screen rather than whichever one missed the cache.
+  //
+  // Falls back to the browser profile whenever the fetch fails, which on an unattended
+  // screen is a normal outcome rather than an error: an offline player still reports, it
+  // just reports the less specific profile. Reporting is client-side either way, so GA4
+  // attributes it to this screen's own client_id.
+  const reportPlayer = async () => {
+    let profile = detectPlayer()
+    try {
+      const response = await fetch(PLAYER_PROFILE_PATH, { cache: 'no-store' })
+      if (response.ok) profile = await response.json()
+    } catch {
+      // Keep the browser-built profile; player_sources records which signals were used.
+    }
+    const params = new URLSearchParams(window.location.search)
+    trackPlayer(profile, {
+      app: 'weather',
+      config: {
+        locale: params.get('locale') || 'auto',
+        hour_format: params.get('24h') === '1' ? '24' : params.get('24h') === '0' ? '12' : 'auto'
+      }
+    })
   }
 
   // Only auto-run in a real browser; under a test runner there is no document.

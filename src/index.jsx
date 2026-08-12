@@ -1,4 +1,8 @@
 import { Hono } from 'hono'
+import {
+  PLAYER_PROFILE_PATH,
+  playerProfileResponse
+} from '@screenly-labs/signage-kit/analytics-server'
 import { cache } from 'hono/cache'
 import { logger } from 'hono/logger'
 import { serveStatic } from 'hono/cloudflare-workers'
@@ -106,6 +110,14 @@ app.get('/', async (c) => {
     return response
   }
 })
+
+// Player profile for the telemetry. Deliberately NOT behind the cache middleware and
+// served no-store by playerProfileResponse: this is the one thing that must be computed
+// per request. The SSR page cache above is keyed by asset version + coordinates with no
+// user-agent component, so a profile embedded in that HTML would describe whichever
+// screen missed the cache. A Worker also sees X-Requested-With, which the page cannot,
+// and which is the only signal that names an Android WebView vendor.
+app.get(PLAYER_PROFILE_PATH, (c) => playerProfileResponse(c.req.raw))
 
 app.get('/api/weather/*', cache({ cacheName: 'default', cacheControl: 's-maxage=10800' }))
 app.route('/api/weather', weather)
