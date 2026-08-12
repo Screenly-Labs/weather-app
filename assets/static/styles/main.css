@@ -139,14 +139,25 @@ body[data-night="true"]        { --accent: #b6a6f2; }
   border-block-end: 1px solid var(--hairline);
 }
 
+/* The location is the identifying element: these screens are often deployed one
+   per site and cycled, so "which site am I looking at" has to read at a glance
+   from across a room. It used to sit at 1.55rem, the same size as a forecast
+   temperature and smaller than the weather description, which read as a caption
+   rather than a heading. Sized fluidly rather than with a flat bump so it does
+   not eat a small Raspberry Pi touch display: a flat 2.6rem gave the masthead
+   24% of the height at 800x480. Long names still wrap to a second line, which is
+   the graceful fallback; do NOT add white-space: nowrap to win that back, as
+   .content is a grid whose column takes its min-content width from the masthead,
+   so a non-wrapping name widens the grid past the viewport and .content's
+   overflow: hidden then clips the forecast row. */
 .place {
   display: inline-flex;
   align-items: center;
   gap: 0.45em;
   min-inline-size: 0;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 40, "wght" 470;
-  font-size: 1.55rem;
+  font-variation-settings: "opsz" 72, "wght" 600;
+  font-size: clamp(2rem, 2.9vw, 3rem);
   letter-spacing: -0.005em;
 }
 
