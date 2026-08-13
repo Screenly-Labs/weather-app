@@ -83,10 +83,17 @@ describe('isStalePlayer', () => {
     // would match nothing: the platform only comes from a literal Raspbian token
     // that the target UA does not send. If this ever starts reporting
     // 'raspberry-pi', the comment on isStalePlayer needs revisiting.
-    expect(profile(UA.oldAnthias).platform).toBe('linux')
+    //
+    // Asserted as intent rather than as a literal value. signage-kit 2026.8.5
+    // split ARM Linux out as its own platform, and this test failed purely
+    // because it had pinned the old string, even though both claims it exists to
+    // make were still true. The claims are what matter.
+    expect(profile(UA.oldAnthias).platform).not.toBe('raspberry-pi')
     // And platform is not a discriminator anyway: the player we exclude reports
     // exactly the same one.
-    expect(profile(UA.brightsign).platform).toBe('linux')
+    expect(profile(UA.brightsign).platform).toBe(profile(UA.oldAnthias).platform)
+    // Kept as documentation of what that shared value currently is.
+    expect(profile(UA.oldAnthias).platform).toBe('linux-arm')
   })
 
   it('stays quiet on a custom UA that names no engine', () => {
