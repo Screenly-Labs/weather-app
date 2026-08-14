@@ -1,4 +1,6 @@
 import { html, raw } from 'hono/html'
+import { analyticsBootstrap } from '@screenly-labs/signage-kit/analytics-bootstrap'
+import { PLAYER_PROFILE_PATH } from '@screenly-labs/signage-kit/analytics-server'
 import { GATE } from '@screenly-labs/signage-kit/gate'
 
 const Layout = (props) => html`<!DOCTYPE html>
@@ -31,15 +33,14 @@ const Layout = (props) => html`<!DOCTYPE html>
         src="https://js.sentry-cdn.com/${props.sentryId}.min.js"
         crossorigin="anonymous"
       ></script>
-      <!-- Google tag (gtag.js) -->
+      <!-- Google tag (gtag.js). client_id is pinned to the Screenly device id by the kit
+           bootstrap, so one screen is one GA4 user: GA4's own client_id lives in the _ga
+           cookie and these players largely boot with fresh storage, so it churns. The
+           bootstrap owns the config call, because client_id is stamped onto each event as
+           it is sent, and it stays inline rather than moving into main.js so a screen that
+           never loads the bundle still reports. -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=${props.gaId}"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', '${props.gaId}');
-      </script>
+      ${raw(analyticsBootstrap({ gaId: props.gaId, profilePath: PLAYER_PROFILE_PATH }))}
       <!-- main.js is a self-executing classic script (no ES module export), so
            a plain async <script> runs it and any cached HTML stays compatible
            across deploys. The ?v= busts it whenever the bundle changes. -->
