@@ -117,7 +117,12 @@ app.get('/', async (c) => {
 // user-agent component, so a profile embedded in that HTML would describe whichever
 // screen missed the cache. A Worker also sees X-Requested-With, which the page cannot,
 // and which is the only signal that names an Android WebView vendor.
-app.get(PLAYER_PROFILE_PATH, (c) => playerProfileResponse(c.req.raw))
+//
+// Naming the app here is what gets the page view attributed: the payload then carries
+// ready-made user properties, which the inline bootstrap sets BEFORE gtag('config') fires
+// the automatic page_view. Without it the first page view under any client_id has no player
+// fields, and a screen that mints a fresh id every load never attributes one at all.
+app.get(PLAYER_PROFILE_PATH, (c) => playerProfileResponse(c.req.raw, { app: 'weather' }))
 
 app.get('/api/weather/*', cache({ cacheName: 'default', cacheControl: 's-maxage=10800' }))
 app.route('/api/weather', weather)
